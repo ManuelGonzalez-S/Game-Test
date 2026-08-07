@@ -366,6 +366,53 @@ body::before {
 }
 .flo-foot { font-size: 0.8rem; color: var(--text-dim); margin-top: 12px; }
 
+/* ---------- Árbol de Semillas ---------- */
+.tree-title {
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text);
+  margin: 18px 0 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border);
+}
+.tree { display: flex; flex-direction: column; gap: 6px; }
+.tree-branch {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 12px 0 2px;
+}
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 11px;
+  border-radius: 11px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.2s, border-color 0.2s, opacity 0.2s;
+}
+.tn-emoji { font-size: 1.4rem; flex-shrink: 0; }
+.tn-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.tn-name { font-weight: 700; font-size: 0.92rem; }
+.tn-desc { font-size: 0.74rem; color: var(--text-dim); line-height: 1.3; }
+.tn-cost { font-weight: 800; font-size: 0.9rem; color: var(--gold); flex-shrink: 0; }
+
+.tree-node.available { border-color: rgba(255,214,107,0.55); background: rgba(255,214,107,0.09); }
+.tree-node.available:active { transform: scale(0.98); }
+.tree-node.owned { border-color: rgba(88,224,138,0.5); background: rgba(88,224,138,0.1); }
+.tree-node.owned .tn-cost { color: var(--accent); }
+.tree-node.expensive { opacity: 0.7; }
+.tree-node.expensive .tn-cost { color: var(--danger); }
+.tree-node.locked { opacity: 0.45; }
+.tree-node.pulse { animation: rowPulse 0.3s ease; }
+
 /* ---------- Modal de logros ---------- */
 .modal {
   position: fixed;

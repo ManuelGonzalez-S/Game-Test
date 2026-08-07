@@ -12,7 +12,9 @@ function defaultState() {
     totalClicks: 0,     // toques totales
     generators,         // id -> cantidad
     upgrades: {},       // id -> true (mejoras compradas)
-    seeds: 0,           // Semillas Estelares (prestigio, permanentes)
+    seeds: 0,           // Semillas Estelares disponibles (se gastan en el árbol)
+    totalSeeds: 0,      // semillas ganadas en total (para logros)
+    tree: {},           // id de nodo -> true (nodos del árbol comprados)
     floradas: 0,        // nº de veces que has florecido
     achievements: {},   // id -> true (logros desbloqueados)
     lastSeen: Date.now(),
@@ -47,7 +49,9 @@ function loadGame() {
     }
     if (!state.upgrades || typeof state.upgrades !== 'object') state.upgrades = {};
     if (!state.achievements || typeof state.achievements !== 'object') state.achievements = {};
+    if (!state.tree || typeof state.tree !== 'object') state.tree = {};
     if (typeof state.seeds !== 'number') state.seeds = 0;
+    if (typeof state.totalSeeds !== 'number') state.totalSeeds = state.seeds || 0;
     if (typeof state.floradas !== 'number') state.floradas = 0;
     return true;
   } catch (e) {
@@ -68,9 +72,9 @@ function applyOfflineProgress() {
   const elapsedSec = Math.max(0, (now - (state.lastSeen || now)) / 1000);
   if (elapsedSec < 1) return { gained: 0, seconds: 0 };
 
-  const capped = Math.min(elapsedSec, GAME_DATA.offlineCapSeconds);
+  const capped = Math.min(elapsedSec, effectiveOfflineCap());
   const perSec = passiveProduction();
-  const gained = perSec * capped * GAME_DATA.offlineRate;
+  const gained = perSec * capped * effectiveOfflineRate();
 
   if (gained > 0) {
     state.spores += gained;

@@ -66,8 +66,15 @@ Tono: zen, relajante, muy visual. El planeta cambia de aspecto según tu progres
 
 - **Progreso offline:** al volver, "mientras no estabas ganaste X Esporas"
   (con posible tope y/o tasa reducida para no romper balance).
-- **Prestigio (Florecer):** reset por Semillas Estelares → multiplicador permanente.
-  Fórmula inicial candidata: `semillas = floor(sqrt(totalEsporasVida / K))`.
+- **Prestigio (Florecer):** reset por Semillas Estelares (`floor((total/1000)^(1/3))`,
+  mín. 3 para el 1er Florecer). Las semillas se **gastan** en el **Árbol de Semillas**
+  (nodos permanentes entre floradas), no dan bonus por acumularlas.
+- **Árbol de Semillas (22 nodos, 5 ramas):**
+  - 🌿 *Fertilidad* — ×prod global multiplicativo (rompe el muro de mediados).
+  - 👆 *Vitalidad* — poder de toque y sinergia toque↔producción.
+  - 🌙 *Letargo* — tasa y tope del progreso offline.
+  - 🧬 *Sinergia* — multiplicadores por grupo de generadores (base/medio/avanzado).
+  - ✨ *Cosecha* — meta: head-start (empezar con generadores/mejoras) y +% semillas.
 - **Logros / hitos:** recompensas por totales, por generadores, por toques.
 - **Bloom visual:** el planeta evoluciona (color, elementos, criaturas) según el
   total de Esporas producidas → recompensa visible al progreso.

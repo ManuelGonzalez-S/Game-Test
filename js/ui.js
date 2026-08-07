@@ -4,7 +4,9 @@ const UI = (() => {
   const el = {};
   let _generatorNodes = {}; // id -> { row, cost, count, desc }
   let _upgradeNodes = {};   // id -> card
+  let _treeNodes = {};      // id -> card (nodos del árbol)
   let _upgSignature = '';
+  const BRANCH_EMOJI = { Fertilidad: '🌿', Vitalidad: '👆', Letargo: '🌙', Sinergia: '🧬', Cosecha: '✨' };
   let _activeTab = 'gen';
   let _lastPerSec = -1;
   let _lastTap = -1;
@@ -30,6 +32,7 @@ const UI = (() => {
     el.floGain = document.getElementById('flo-gain');
     el.btnFlorecer = document.getElementById('btn-florecer');
     el.floFloradas = document.getElementById('flo-floradas');
+    el.tree = document.getElementById('tree');
     el.seedsStat = document.getElementById('seeds-stat');
     el.fx = document.getElementById('fx');
     el.btnSave = document.getElementById('btn-save');
@@ -285,12 +288,71 @@ const UI = (() => {
     el.florecer.hidden = tab !== 'flo';
   }
 
+  // Construye el Árbol de Semillas una sola vez, agrupado por ramas.
+  function buildTree() {
+    el.tree.innerHTML = '';
+    _treeNodes = {};
+    const order = [];
+    const byBranch = {};
+    for (const node of GAME_DATA.tree) {
+      if (!byBranch[node.branch]) { byBranch[node.branch] = []; order.push(node.branch); }
+      byBranch[node.branch].push(node);
+    }
+    for (const b of order) {
+      const header = document.createElement('div');
+      header.className = 'tree-branch';
+      header.textContent = (BRANCH_EMOJI[b] || '') + ' ' + b;
+      el.tree.appendChild(header);
+      for (const node of byBranch[b]) {
+        const card = document.createElement('button');
+        card.className = 'tree-node';
+        card.setAttribute('data-id', node.id);
+        card.innerHTML = `
+          <span class="tn-emoji">${node.emoji}</span>
+          <span class="tn-info">
+            <span class="tn-name">${node.name}</span>
+            <span class="tn-desc">${node.desc}</span>
+          </span>
+          <span class="tn-cost"></span>`;
+        card.addEventListener('click', () => onBuyTreeNode(node.id));
+        el.tree.appendChild(card);
+        _treeNodes[node.id] = card;
+      }
+    }
+  }
+
+  function renderTree() {
+    for (const node of GAME_DATA.tree) {
+      const card = _treeNodes[node.id];
+      if (!card) continue;
+      const st = treeNodeState(node);
+      card.classList.toggle('owned', st === 'owned');
+      card.classList.toggle('available', st === 'available');
+      card.classList.toggle('locked', st === 'locked');
+      card.classList.toggle('expensive', st === 'expensive');
+      const costEl = card.querySelector('.tn-cost');
+      costEl.textContent = st === 'owned' ? '✓' : st === 'locked' ? '🔒' : node.cost + ' ✨';
+      card.disabled = st !== 'available';
+    }
+  }
+
+  function onBuyTreeNode(id) {
+    if (buyTreeNode(id)) {
+      if (typeof Sound !== 'undefined') Sound.buy();
+      toast('🌳 ' + treeNode(id).name);
+      render();
+      const card = _treeNodes[id];
+      card.classList.remove('pulse'); void card.offsetWidth; card.classList.add('pulse');
+    }
+  }
+
   // Actualiza el panel de Florecer y el indicador de semillas del HUD.
   function renderFlorecer() {
     const seeds = state.seeds || 0;
     el.floCurrent.textContent = formatNumber(seeds);
-    const bonusPct = Math.round(seeds * GAME_DATA.prestige.bonusPerSeed * 100);
-    el.floBonus.textContent = '+' + bonusPct + '% a toda la producción';
+    el.floBonus.textContent = 'Árbol: ×' + formatNumber(treeGlobalMult()) + ' producción';
+
+    renderTree();
 
     const pend = pendingSeeds();
     const can = canFlorecer();
@@ -423,6 +485,7 @@ const UI = (() => {
     Bloom.init(onStageUp);
     Sound.setEnabled(state.soundEnabled);
     buildShop();
+    buildTree();
     bindEvents();
     updateSoundBtn();
     render();

@@ -80,17 +80,56 @@ const GAME_DATA = {
     { name: 'Océanos',         emoji: '💧', at: 30000 },
     { name: 'Bosques',         emoji: '🌳', at: 600000 },
     { name: 'Mundo vivo',      emoji: '🦌', at: 12000000 },
-    { name: 'Paraíso',         emoji: '🌍', at: 300000000 },
+    { name: 'Paraíso',         emoji: '🌍', at: 150000000 },
   ],
 
-  // Prestigio ("Florecer"): reinicia el planeta a cambio de Semillas Estelares (✨),
-  // que dan un multiplicador permanente a toda la producción.
-  prestige: {
-    seedScale: 1e6,        // divisor de esporas totales
-    seedExponent: 1 / 3,   // raíz cúbica -> crecimiento suave
-    bonusPerSeed: 0.2,     // +20% de producción por semilla
-    minToFlorecer: 1,      // semillas mínimas para poder florecer
+  // Grupos de generadores (para las sinergias del árbol).
+  groups: {
+    base: ['musgo', 'liquenes', 'hongos', 'helechos'],
+    mid:  ['arboles', 'insectos', 'polinizadores'],
+    adv:  ['aves', 'fauna', 'consciencia'],
   },
+
+  // Prestigio ("Florecer"): reinicia el planeta a cambio de Semillas Estelares (✨),
+  // que se GASTAN en el Árbol de Semillas (nodos permanentes entre floradas).
+  prestige: {
+    seedScale: 1000,       // divisor de esporas totales (curva afinada)
+    seedExponent: 1 / 3,   // raíz cúbica -> crecimiento suave
+    minToFlorecer: 3,      // semillas mínimas para el 1er Florecer (que valga la pena)
+  },
+
+  // Árbol de Semillas: cada nodo cuesta ✨ y es permanente. `req` = nodo previo.
+  // Efectos posibles: prodMult, clickMult, clickCps, group{base|mid|adv|all, mult},
+  //   offlineRate, offlineCap (seg), startGen{group,n}, seedGainMult, startUpgrades[].
+  tree: [
+    // 🌿 Fertilidad — producción global (multiplicativo, rompe el muro)
+    { id: 'fert1', branch: 'Fertilidad', emoji: '🌿', name: 'Suelo fértil',  cost: 1,  req: null,    prodMult: 1.5, desc: '×1.5 a toda la producción.' },
+    { id: 'fert2', branch: 'Fertilidad', emoji: '🌿', name: 'Humus rico',    cost: 3,  req: 'fert1', prodMult: 2,   desc: '×2 a toda la producción.' },
+    { id: 'fert3', branch: 'Fertilidad', emoji: '🌿', name: 'Micorrizas',    cost: 8,  req: 'fert2', prodMult: 3,   desc: '×3 a toda la producción.' },
+    { id: 'fert4', branch: 'Fertilidad', emoji: '🌿', name: 'Gaia despierta',cost: 20, req: 'fert3', prodMult: 5,   desc: '×5 a toda la producción.' },
+    { id: 'fert5', branch: 'Fertilidad', emoji: '🌿', name: 'Génesis',       cost: 50, req: 'fert4', prodMult: 10,  desc: '×10 a toda la producción.' },
+    // 👆 Vitalidad — toque
+    { id: 'vit1', branch: 'Vitalidad', emoji: '👆', name: 'Toque potente', cost: 2,  req: null,   clickMult: 5,  desc: 'Esporas por toque ×5.' },
+    { id: 'vit2', branch: 'Vitalidad', emoji: '💧', name: 'Savia viva',    cost: 5,  req: 'vit1', clickCps: 0.10, desc: 'Cada toque gana +10% de tu producción/seg.' },
+    { id: 'vit3', branch: 'Vitalidad', emoji: '⚡', name: 'Toque cósmico', cost: 15, req: 'vit2', clickMult: 10, desc: 'Esporas por toque ×10 adicional.' },
+    { id: 'vit4', branch: 'Vitalidad', emoji: '🌟', name: 'Comunión total',cost: 30, req: 'vit3', clickCps: 0.25, desc: 'Los toques ganan +25% adicional de producción/seg.' },
+    // 🌙 Letargo — offline / idle
+    { id: 'let1', branch: 'Letargo', emoji: '🌙', name: 'Sueño ligero',  cost: 2,  req: null,   offlineRate: 0.75, desc: 'Ganas el 75% de tu producción estando fuera.' },
+    { id: 'let2', branch: 'Letargo', emoji: '🌙', name: 'Sueño profundo',cost: 6,  req: 'let1', offlineRate: 1.0,  desc: 'Ganas el 100% de tu producción estando fuera.' },
+    { id: 'let3', branch: 'Letargo', emoji: '🛌', name: 'Hibernación',   cost: 4,  req: null,   offlineCap: 86400, desc: 'El progreso offline acumula hasta 24 horas.' },
+    { id: 'let4', branch: 'Letargo', emoji: '❄️', name: 'Estasis',       cost: 12, req: 'let3', offlineCap: 259200,desc: 'El progreso offline acumula hasta 3 días.' },
+    // 🧬 Sinergia — grupos de generadores
+    { id: 'syn1', branch: 'Sinergia', emoji: '🦠', name: 'Raíces comunes', cost: 4,  req: null,   group: { g: 'base', mult: 3 }, desc: 'Productores base (Musgo→Helechos) ×3.' },
+    { id: 'syn2', branch: 'Sinergia', emoji: '🌳', name: 'Red vital',      cost: 10, req: 'syn1', group: { g: 'mid',  mult: 3 }, desc: 'Productores medios (Árboles→Polinizadores) ×3.' },
+    { id: 'syn3', branch: 'Sinergia', emoji: '🦌', name: 'Gran fauna',     cost: 25, req: 'syn2', group: { g: 'adv',  mult: 3 }, desc: 'Productores avanzados (Aves→Consciencia) ×3.' },
+    { id: 'syn4', branch: 'Sinergia', emoji: '🎼', name: 'Sinfonía viva',  cost: 60, req: 'syn3', group: { g: 'all',  mult: 2 }, desc: '×2 adicional a TODOS los generadores.' },
+    // ✨ Cosecha — meta-prestigio (acelera cada bucle)
+    { id: 'cos1', branch: 'Cosecha', emoji: '🧬', name: 'Memoria genética', cost: 4,  req: null,   startGen: { group: 'base', n: 10 }, desc: 'Empiezas cada mundo con 10 de cada productor base.' },
+    { id: 'cos2', branch: 'Cosecha', emoji: '✨', name: 'Cosecha rica',     cost: 6,  req: null,   seedGainMult: 1.25, desc: '+25% de Semillas Estelares al florecer.' },
+    { id: 'cos3', branch: 'Cosecha', emoji: '🌱', name: 'Semillero',        cost: 15, req: 'cos1', startGen: { group: 'mid', n: 5, alsoBase: 25 }, desc: 'Empiezas con 25 base y 5 de cada productor medio.' },
+    { id: 'cos4', branch: 'Cosecha', emoji: '💫', name: 'Cosecha estelar',  cost: 20, req: 'cos2', seedGainMult: 1.5, desc: '+50% adicional de Semillas al florecer.' },
+    { id: 'cos5', branch: 'Cosecha', emoji: '📖', name: 'Sabiduría',        cost: 12, req: null,   startUpgrades: ['click1', 'click2', 'click3'], desc: 'Empiezas cada mundo con las mejoras de Toque ya compradas.' },
+  ],
 
   // Logros: se comprueban con `check(state)`. Una vez desbloqueados, permanentes.
   achievements: [
@@ -102,11 +141,12 @@ const GAME_DATA = {
     { id: 'oceans',    emoji: '💧', name: 'Océanos',           desc: 'Alcanza la era de los Océanos.',          check: s => s.totalSpores >= 30000 },
     { id: 'forests',   emoji: '🌳', name: 'Bosques',           desc: 'Alcanza la era de los Bosques.',          check: s => s.totalSpores >= 600000 },
     { id: 'living',    emoji: '🦌', name: 'Mundo vivo',        desc: 'Alcanza la era del Mundo vivo.',          check: s => s.totalSpores >= 12000000 },
-    { id: 'paradise',  emoji: '🌍', name: 'Paraíso',           desc: 'Alcanza la era del Paraíso.',             check: s => s.totalSpores >= 300000000 },
+    { id: 'paradise',  emoji: '🌍', name: 'Paraíso',           desc: 'Alcanza la era del Paraíso.',             check: s => s.totalSpores >= 150000000 },
     { id: 'allGens',   emoji: '🧬', name: 'Biodiversidad',     desc: 'Ten al menos una de cada forma de vida.', check: s => allGenerators(s) },
     { id: 'gen50',     emoji: '⭐', name: 'Colonia',           desc: 'Ten 50 de una misma forma de vida.',      check: s => maxGeneratorCount(s) >= 50 },
     { id: 'firstFlor', emoji: '🌸', name: 'Renacer',           desc: 'Florece tu planeta por primera vez.',     check: s => (s.floradas || 0) >= 1 },
-    { id: 'seeds10',   emoji: '✨', name: 'Sembradora estelar', desc: 'Reúne 10 Semillas Estelares.',           check: s => (s.seeds || 0) >= 10 },
+    { id: 'seeds10',   emoji: '✨', name: 'Sembradora estelar', desc: 'Gana 10 Semillas Estelares en total.',   check: s => (s.totalSeeds || 0) >= 10 },
+    { id: 'tree5',     emoji: '🌳', name: 'Jardinero cósmico', desc: 'Compra 5 nodos del Árbol de Semillas.',   check: s => treeNodeCount(s) >= 5 },
   ],
 };
 
@@ -123,6 +163,16 @@ function maxGeneratorCount(s) {
   let m = 0;
   for (const g of GAME_DATA.generators) m = Math.max(m, s.generators[g.id] || 0);
   return m;
+}
+function treeNodeCount(s) {
+  let n = 0;
+  for (const t of GAME_DATA.tree) if (s.tree && s.tree[t.id]) n++;
+  return n;
+}
+// Grupo al que pertenece un generador (base / mid / adv), o null.
+function generatorGroup(id) {
+  for (const k in GAME_DATA.groups) if (GAME_DATA.groups[k].includes(id)) return k;
+  return null;
 }
 
 // Coste del siguiente ejemplar de un generador según cuántos ya tienes.
