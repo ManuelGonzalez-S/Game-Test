@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Jardín Cósmico — da vida a un planeta muerto en este juego idle.">
+  <title>🌱 Jardín Cósmico</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Cabecera: recurso + producción -->
+    <header id="hud">
+      <div class="resource">
+        <span id="spores" class="spores">0</span>
+        <span class="resource-label">Esporas 🌱</span>
+      </div>
+      <div id="per-sec" class="per-sec">0 /seg</div>
+    </header>
+
+    <!-- Planeta central -->
+    <main id="stage">
+      <div id="planet-wrap">
+        <button id="planet" aria-label="Tocar el planeta para liberar esporas">
+          <span id="planet-body"></span>
+          <span id="planet-glow"></span>
+        </button>
+        <div id="tap-hint" class="tap-hint">Toca el planeta 👆</div>
+      </div>
+    </main>
+
+    <!-- Tienda de generadores -->
+    <section id="shop" aria-label="Formas de vida">
+      <h2 class="shop-title">Formas de Vida</h2>
+      <div id="generators"></div>
+    </section>
+
+    <footer id="footer">
+      <button id="btn-save" class="footer-btn">💾 Guardar</button>
+      <button id="btn-reset" class="footer-btn danger">♻️ Reiniciar</button>
+    </footer>
+  </div>
+
+  <!-- Contenedor para números flotantes al tocar -->
+  <div id="fx"></div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
