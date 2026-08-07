@@ -467,6 +467,24 @@ body::before {
 .achv-name { font-weight: 700; font-size: 0.95rem; }
 .achv-desc { font-size: 0.78rem; color: var(--text-dim); }
 
+/* ---------- Modal de copia de seguridad ---------- */
+.save-hint { font-size: 0.82rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 12px; }
+.save-label { display: block; font-size: 0.8rem; color: var(--text-dim); font-weight: 700; margin: 12px 0 6px; }
+.save-code {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  word-break: break-all;
+  resize: vertical;
+  margin-bottom: 8px;
+}
+#save-modal .footer-btn { width: 100%; margin-bottom: 4px; }
+
 /* ---------- Footer ---------- */
 #footer { display: flex; gap: 10px; margin-top: 12px; }
 .footer-btn {

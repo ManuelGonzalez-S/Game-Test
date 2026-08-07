@@ -66,6 +66,28 @@ function resetGame() {
   saveGame();
 }
 
+// ---- Copia de seguridad (export / import) ----
+// Devuelve un código en base64 con la partida (para copiar/pegar).
+function exportSave() {
+  saveGame();
+  const raw = localStorage.getItem(SAVE_KEY) || JSON.stringify(state);
+  return btoa(unescape(encodeURIComponent(raw)));
+}
+// Restaura la partida desde un código. Devuelve true si es válido.
+function importSave(code) {
+  try {
+    const raw = decodeURIComponent(escape(atob((code || '').trim())));
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !parsed.generators) return false;
+    localStorage.setItem(SAVE_KEY, raw);
+    loadGame();
+    saveGame();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Calcula y aplica el progreso offline. Devuelve { gained, seconds }.
 function applyOfflineProgress() {
   const now = Date.now();

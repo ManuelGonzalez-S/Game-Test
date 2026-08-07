@@ -37,6 +37,13 @@ const UI = (() => {
     el.fx = document.getElementById('fx');
     el.btnSave = document.getElementById('btn-save');
     el.btnReset = document.getElementById('btn-reset');
+    el.btnBackup = document.getElementById('btn-backup');
+    el.saveModal = document.getElementById('save-modal');
+    el.saveClose = document.getElementById('save-close');
+    el.saveCode = document.getElementById('save-code');
+    el.saveCopy = document.getElementById('save-copy');
+    el.saveImport = document.getElementById('save-import');
+    el.saveImportBtn = document.getElementById('save-import-btn');
     el.btnSound = document.getElementById('btn-sound');
     el.btnTrophy = document.getElementById('btn-trophy');
     el.achvModal = document.getElementById('achv-modal');
@@ -103,6 +110,7 @@ const UI = (() => {
         row.classList.add('milestone');
         if (typeof Sound !== 'undefined') Sound.stageUp();
       }
+      saveGame();
     } else {
       // Feedback de "no puedes permitírtelo"
       const node = _generatorNodes[genId];
@@ -117,6 +125,7 @@ const UI = (() => {
       if (typeof Sound !== 'undefined') Sound.buy();
       toast('⚡ Mejora: ' + upgradeById(id).name);
       render();
+      saveGame();
     }
   }
 
@@ -341,6 +350,7 @@ const UI = (() => {
       if (typeof Sound !== 'undefined') Sound.buy();
       toast('🌳 ' + treeNode(id).name);
       render();
+      saveGame();
       const card = _treeNodes[id];
       card.classList.remove('pulse'); void card.offsetWidth; card.classList.add('pulse');
     }
@@ -428,6 +438,43 @@ const UI = (() => {
     el.achvModal.hidden = true;
   }
 
+  // ---- Copia de seguridad (export / import) ----
+  function openBackup() {
+    el.saveCode.value = exportSave();
+    el.saveImport.value = '';
+    el.saveModal.hidden = false;
+  }
+  function closeBackup() { el.saveModal.hidden = true; }
+  function copyBackup() {
+    const code = el.saveCode.value;
+    const done = () => toast('📋 Código copiado');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(done).catch(() => { selectAndCopy(); });
+    } else {
+      selectAndCopy();
+    }
+    function selectAndCopy() {
+      el.saveCode.focus();
+      el.saveCode.select();
+      try { document.execCommand('copy'); toast('📋 Código copiado'); }
+      catch (e) { toast('Selecciona y copia el código manualmente'); }
+    }
+  }
+  function doImport() {
+    const code = el.saveImport.value;
+    if (!code.trim()) { toast('Pega un código primero'); return; }
+    if (importSave(code)) {
+      closeBackup();
+      _upgSignature = '__reset__';
+      _lastPerSec = -1; _lastTap = -1;
+      if (typeof Bloom !== 'undefined') Bloom.reset();
+      render();
+      toast('✅ Partida restaurada');
+    } else {
+      toast('❌ Código no válido');
+    }
+  }
+
   function bindEvents() {
     // Usamos pointerdown para respuesta inmediata en móvil.
     el.planet.addEventListener('pointerdown', onPlanetTap);
@@ -461,6 +508,14 @@ const UI = (() => {
     el.achvClose.addEventListener('click', closeAchievements);
     el.achvModal.addEventListener('click', (e) => {
       if (e.target === el.achvModal) closeAchievements(); // clic fuera del cuadro
+    });
+
+    el.btnBackup.addEventListener('click', openBackup);
+    el.saveClose.addEventListener('click', closeBackup);
+    el.saveCopy.addEventListener('click', copyBackup);
+    el.saveImportBtn.addEventListener('click', doImport);
+    el.saveModal.addEventListener('click', (e) => {
+      if (e.target === el.saveModal) closeBackup();
     });
   }
 
