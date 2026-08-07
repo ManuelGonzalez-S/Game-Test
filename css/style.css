@@ -104,7 +104,16 @@ body::before {
   font-variant-numeric: tabular-nums;
 }
 .resource-label { font-size: 0.85rem; color: var(--text-dim); margin-top: 4px; }
-.per-sec { font-size: 0.95rem; color: var(--accent); margin-top: 6px; font-weight: 600; }
+.stats {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.per-sec { font-size: 0.95rem; color: var(--accent); font-weight: 600; }
+.per-tap { font-size: 0.9rem; color: var(--text-dim); font-weight: 600; }
 
 /* ---------- Planeta ---------- */
 #stage {
@@ -222,7 +231,53 @@ body::before {
   -webkit-overflow-scrolling: touch;
 }
 .shop-title { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* Pestañas Vida / Mejoras */
+.tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.tab {
+  flex: 1;
+  position: relative;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.tab.active {
+  color: var(--text);
+  background: rgba(88,224,138,0.12);
+  border-color: rgba(88,224,138,0.5);
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--gold);
+  color: #2a2410;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+.tab-panel { display: flex; flex-direction: column; gap: 8px; }
 #generators { display: flex; flex-direction: column; gap: 8px; }
+/* El atributo hidden debe ganar al display:flex del ID */
+#generators[hidden], #upgrades[hidden] { display: none; }
+
+.upg-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  padding: 24px 12px;
+}
 
 .gen-row {
   display: flex;
@@ -246,6 +301,16 @@ body::before {
 @keyframes rowPulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); background: rgba(124,240,192,0.18); } 100% { transform: scale(1); } }
 .gen-row.shake { animation: shake 0.3s ease; }
 @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.gen-row.milestone { animation: milestoneFlash 0.6s ease; }
+@keyframes milestoneFlash {
+  0% { background: rgba(255,214,107,0.05); }
+  40% { background: rgba(255,214,107,0.35); border-color: var(--gold); transform: scale(1.02); }
+  100% { background: rgba(255,255,255,0.04); }
+}
+
+/* Mejoras: acento distinto para diferenciarlas de los generadores */
+.upg-row.affordable { border-color: rgba(255,214,107,0.55); background: rgba(255,214,107,0.09); }
+.gen-desc.is-meta { color: var(--accent); font-weight: 600; }
 
 .gen-emoji { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
 .gen-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }

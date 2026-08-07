@@ -33,8 +33,9 @@ docs/GAME_DESIGN.md   <- diseño completo y roadmap por fases
 
 ## 🗺️ Estado
 
-- ✅ **Fase 1 (MVP):** recurso, planeta tocable, 5 generadores, producción pasiva,
-  autoguardado, progreso offline.
-- ⏭️ Siguientes: mejoras y milestones, bloom visual, prestigio (Florecer), logros.
+- ✅ **Fase 1 (MVP):** recurso, planeta tocable, producción pasiva, autoguardado, offline.
+- ✅ **Fase 3 (bloom/juicy):** eras del planeta, partículas, sonido, celebraciones.
+- ✅ **Fase 2 (progresión):** 10 generadores, milestones automáticos, mejoras y pestañas.
+- ⏭️ Siguientes: prestigio (Florecer), logros y pulido.
 
 Ver [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) para el diseño y roadmap completos.

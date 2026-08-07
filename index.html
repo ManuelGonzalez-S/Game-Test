@@ -20,7 +20,10 @@
         <span id="spores" class="spores">0</span>
         <span class="resource-label">Esporas 🌱</span>
       </div>
-      <div id="per-sec" class="per-sec">0 /seg</div>
+      <div class="stats">
+        <span id="per-sec" class="per-sec">0 /seg</span>
+        <span id="per-tap" class="per-tap">👆 +1</span>
+      </div>
     </header>
 
     <!-- Planeta central -->
@@ -75,10 +78,16 @@
       </div>
     </main>
 
-    <!-- Tienda de generadores -->
-    <section id="shop" aria-label="Formas de vida">
-      <h2 class="shop-title">Formas de Vida</h2>
-      <div id="generators"></div>
+    <!-- Tienda: pestañas Vida / Mejoras -->
+    <section id="shop" aria-label="Tienda">
+      <div class="tabs" role="tablist">
+        <button id="tab-gen" class="tab active" role="tab">🌱 Vida</button>
+        <button id="tab-upg" class="tab" role="tab">
+          ⚡ Mejoras <span id="upg-badge" class="badge" hidden>0</span>
+        </button>
+      </div>
+      <div id="generators" class="tab-panel"></div>
+      <div id="upgrades" class="tab-panel" hidden></div>
     </section>
 
     <footer id="footer">

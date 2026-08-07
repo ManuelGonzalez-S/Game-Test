@@ -5,15 +5,16 @@
   loadGame();
 
   // 2. Progreso offline antes de inicializar UI.
-  const offlineGain = applyOfflineProgress();
+  const offline = applyOfflineProgress();
 
   // 3. Inicializar interfaz.
   UI.init();
 
   // 4. Mensaje de bienvenida si hubo progreso offline relevante.
-  if (offlineGain > 1) {
+  if (offline.gained > 1) {
     setTimeout(() => {
-      UI.toast('🌙 Mientras no estabas: +' + formatNumber(offlineGain) + ' esporas');
+      UI.toast('🌙 Ausente ' + formatDuration(offline.seconds) +
+        ': +' + formatNumber(offline.gained) + ' esporas');
     }, 400);
   }
 

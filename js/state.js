@@ -11,6 +11,7 @@ function defaultState() {
     totalSpores: 0,     // esporas producidas en total (para bloom/hitos)
     totalClicks: 0,     // toques totales
     generators,         // id -> cantidad
+    upgrades: {},       // id -> true (mejoras compradas)
     lastSeen: Date.now(),
     soundEnabled: true, // sonido activado por defecto (arranca tras 1er toque)
     version: 1,
@@ -41,6 +42,7 @@ function loadGame() {
     for (const g of GAME_DATA.generators) {
       if (typeof state.generators[g.id] !== 'number') state.generators[g.id] = 0;
     }
+    if (!state.upgrades || typeof state.upgrades !== 'object') state.upgrades = {};
     return true;
   } catch (e) {
     console.warn('Guardado corrupto, empezando de cero:', e);
@@ -54,11 +56,11 @@ function resetGame() {
   saveGame();
 }
 
-// Calcula y aplica el progreso offline. Devuelve las esporas ganadas.
+// Calcula y aplica el progreso offline. Devuelve { gained, seconds }.
 function applyOfflineProgress() {
   const now = Date.now();
   const elapsedSec = Math.max(0, (now - (state.lastSeen || now)) / 1000);
-  if (elapsedSec < 1) return 0;
+  if (elapsedSec < 1) return { gained: 0, seconds: 0 };
 
   const capped = Math.min(elapsedSec, GAME_DATA.offlineCapSeconds);
   const perSec = passiveProduction();
@@ -68,5 +70,16 @@ function applyOfflineProgress() {
     state.spores += gained;
     state.totalSpores += gained;
   }
-  return gained;
+  return { gained, seconds: elapsedSec };
+}
+
+// Formatea una duración en segundos como "2h 15m", "45m", "30s".
+function formatDuration(sec) {
+  sec = Math.floor(sec);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return h + 'h ' + m + 'm';
+  if (m > 0) return m + 'm';
+  return s + 's';
 }

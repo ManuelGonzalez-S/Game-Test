@@ -120,20 +120,21 @@ Tono: zen, relajante, muy visual. El planeta cambia de aspecto según tu progres
 - Estructura de proyecto y shell HTML/CSS mobile-first.
 - Game loop con tick fijo. Formato de números. Save/load en localStorage.
 
-### Fase 1 — Núcleo jugable (MVP) ⬅️ *empezamos aquí*
+### Fase 1 — Núcleo jugable (MVP) ✅ HECHA
 - Recurso Esporas + planeta tocable (producción manual).
 - 3–4 generadores con compra y producción pasiva.
 - Contador de Esporas y producción/seg. Autoguardado.
 - **Objetivo:** divertido desde el minuto 1.
 
-### Fase 2 — Progresión
+### Fase 2 — Progresión ✅ HECHA
 - Los 10 generadores completos + escalado de costes.
-- Mejoras (toque, por-generador, global) y milestones automáticos.
-- Progreso offline.
+- Mejoras comprables (toque, sinergia toque↔producción, global) + pestañas.
+- Milestones automáticos (×2 por cantidad: 10/25/50/100/…).
+- Progreso offline con tiempo ausente.
 
-### Fase 3 — Vida visual (bloom)
-- El planeta evoluciona visualmente por hitos.
-- Feedback jugoso: partículas, números flotantes, animaciones, sonido/vibración.
+### Fase 3 — Vida visual (bloom) ✅ HECHA
+- El planeta evoluciona visualmente por eras (SVG por capas).
+- Feedback jugoso: partículas, ripples, celebración de era, sonido/vibración.
 
 ### Fase 4 — Prestigio (Florecer)
 - Semillas Estelares, multiplicador permanente, flujo de reset.
