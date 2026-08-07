@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Jardín Cósmico — da vida a un planeta muerto en este juego idle.">
+  <title>🌱 Jardín Cósmico</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Canvas de partículas (detrás de los números flotantes) -->
+  <canvas id="particles"></canvas>
+
+  <div id="app">
+    <!-- Cabecera: recurso + producción -->
+    <header id="hud">
+      <button id="btn-trophy" class="icon-btn" aria-label="Ver logros">🏆</button>
+      <button id="btn-sound" class="icon-btn" aria-label="Activar o silenciar sonido"></button>
+      <div class="resource">
+        <span id="spores" class="spores">0</span>
+        <span class="resource-label">Esporas 🌱</span>
+      </div>
+      <div class="stats">
+        <span id="per-sec" class="per-sec">0 /seg</span>
+        <span id="per-tap" class="per-tap">👆 +1</span>
+        <span id="seeds-stat" class="seeds-stat" hidden></span>
+      </div>
+    </header>
+
+    <!-- Planeta central -->
+    <main id="stage">
+      <div id="planet-wrap">
+        <button id="planet" aria-label="Tocar el planeta para liberar esporas">
+          <svg id="planet-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <radialGradient id="g-rock" cx="38%" cy="32%" r="78%">
+                <stop offset="0%" stop-color="#9c8b76"/>
+                <stop offset="55%" stop-color="#5f5449"/>
+                <stop offset="100%" stop-color="#2a251f"/>
+              </radialGradient>
+              <radialGradient id="g-ocean" cx="38%" cy="32%" r="80%">
+                <stop offset="0%" stop-color="#3fa3c4"/>
+                <stop offset="70%" stop-color="#1f6f8b"/>
+                <stop offset="100%" stop-color="#0e3a4d"/>
+              </radialGradient>
+              <radialGradient id="g-shade" cx="38%" cy="32%" r="82%">
+                <stop offset="52%" stop-color="rgba(0,0,0,0)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+              </radialGradient>
+              <clipPath id="planet-clip"><circle cx="100" cy="100" r="94"/></clipPath>
+            </defs>
+
+            <!-- Atmósfera (fuera del recorte) -->
+            <circle class="p-atmo" cx="100" cy="100" r="98"/>
+
+            <g clip-path="url(#planet-clip)">
+              <circle class="p-rock" cx="100" cy="100" r="94" fill="url(#g-rock)"/>
+              <circle class="p-ocean" cx="100" cy="100" r="94" fill="url(#g-ocean)"/>
+              <g class="p-land"></g>       <!-- continentes (poblados por bloom.js) -->
+              <g class="p-veg"></g>        <!-- vegetación / motas (bloom.js) -->
+              <g class="p-clouds">
+                <ellipse cx="70"  cy="72"  rx="26" ry="10"/>
+                <ellipse cx="128" cy="104" rx="30" ry="11"/>
+                <ellipse cx="92"  cy="140" rx="22" ry="9"/>
+              </g>
+              <circle class="p-shade" cx="100" cy="100" r="94" fill="url(#g-shade)"/>
+              <ellipse class="p-spec" cx="72" cy="64" rx="32" ry="20" fill="rgba(255,255,255,0.16)"/>
+            </g>
+          </svg>
+        </button>
+
+        <!-- Indicador de era + progreso -->
+        <div id="era">
+          <div id="era-label" class="era-label">🪨 Roca muerta</div>
+          <div class="era-bar"><div id="era-fill" class="era-fill"></div></div>
+        </div>
+
+        <div id="tap-hint" class="tap-hint">Toca el planeta 👆</div>
+      </div>
+    </main>
+
+    <!-- Tienda: pestañas Vida / Mejoras -->
+    <section id="shop" aria-label="Tienda">
+      <div class="tabs" role="tablist">
+        <button id="tab-gen" class="tab active" role="tab">🌱 Vida</button>
+        <button id="tab-upg" class="tab" role="tab">
+          ⚡ Mejoras <span id="upg-badge" class="badge" hidden>0</span>
+        </button>
+        <button id="tab-flo" class="tab" role="tab">
+          🌸 Florecer <span id="flo-badge" class="badge" hidden>!</span>
+        </button>
+      </div>
+      <div id="generators" class="tab-panel"></div>
+      <div id="upgrades" class="tab-panel" hidden></div>
+      <div id="florecer" class="tab-panel" hidden>
+        <div class="flo-card">
+          <div class="flo-seeds"><span id="flo-current">0</span> ✨ Semillas disponibles</div>
+          <div id="flo-bonus" class="flo-bonus">Árbol: ×1 producción</div>
+          <p class="flo-desc">
+            Deja <strong>florecer</strong> tu planeta y renace: pierdes las esporas,
+            generadores y mejoras de este mundo, pero ganas <strong>Semillas Estelares</strong>
+            para invertir en el <strong>Árbol de Semillas</strong> (mejoras permanentes).
+          </p>
+          <div id="flo-gain" class="flo-gain">Aún no puedes florecer</div>
+          <button id="btn-florecer" class="flo-btn" disabled>🌸 Florecer</button>
+          <div id="flo-floradas" class="flo-foot"></div>
+        </div>
+        <h3 class="tree-title">🌳 Árbol de Semillas</h3>
+        <div id="tree" class="tree"></div>
+      </div>
+    </section>
+
+    <footer id="footer">
+      <button id="btn-save" class="footer-btn">💾 Guardar</button>
+      <button id="btn-reset" class="footer-btn danger">♻️ Reiniciar</button>
+    </footer>
+  </div>
+
+  <!-- Números flotantes al tocar -->
+  <div id="fx"></div>
+
+  <!-- Flash de celebración al subir de era -->
+  <div id="flash"></div>
+
+  <!-- Modal de logros -->
+  <div id="achv-modal" class="modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>🏆 Logros <span id="achv-count" class="achv-count"></span></h2>
+        <button id="achv-close" class="modal-close" aria-label="Cerrar">✕</button>
+      </div>
+      <div id="achv-list" class="achv-list"></div>
+    </div>
+  </div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/bloom.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

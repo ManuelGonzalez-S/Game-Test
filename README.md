@@ -1,1 +1,45 @@
-# Game-Test
+# 🌱 Jardín Cósmico
+
+Juego **idle/interactivo** web. Das vida a un planeta muerto liberando *Esporas*
+al tocarlo, cultivas formas de vida que producen solas, y haces crecer tu mundo.
+
+Mobile-first (prioridad móvil), también funciona en portátil. Sin instalación:
+solo abrir en el navegador.
+
+## ▶️ Cómo jugar
+
+Abre `index.html` en cualquier navegador (móvil o escritorio). O sírvelo:
+
+```bash
+python3 -m http.server 8000
+# abre http://localhost:8000
+```
+
+- **Toca el planeta** para liberar Esporas.
+- Gasta Esporas en **Formas de Vida** (Musgo, Líquenes, Hongos...) para producir
+  esporas automáticamente.
+- El juego **autoguarda** y calcula el progreso mientras estás fuera.
+
+## 🧱 Stack
+
+HTML + CSS + JavaScript vanilla + `localStorage`. Sin build step.
+
+```
+index.html
+css/style.css
+js/  format.js · data.js · state.js · engine.js · ui.js · main.js
+docs/GAME_DESIGN.md   <- diseño completo y roadmap por fases
+```
+
+## 🗺️ Estado
+
+- ✅ **Fase 1 (MVP):** recurso, planeta tocable, producción pasiva, autoguardado, offline.
+- ✅ **Fase 3 (bloom/juicy):** eras del planeta, partículas, sonido, celebraciones.
+- ✅ **Fase 2 (progresión):** 10 generadores, milestones automáticos, mejoras y pestañas.
+- ✅ **Fase 4 (prestigio):** Florecer → Semillas Estelares.
+- ✅ **Fase 5 (retención):** 14 logros, modal, icono de sonido SVG.
+- ✅ **Árbol de Semillas:** 22 nodos en 5 ramas, comprados con semillas (permanentes).
+- ✅ **Balanceo afinado:** curva de semillas, sinergias y head-start (ver `docs/`).
+- ⏭️ Pendiente futuro: tema claro/oscuro, más contenido endgame.
+
+Ver [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) para el diseño y roadmap completos.
