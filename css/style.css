@@ -65,11 +65,35 @@ body::before {
   padding: calc(12px + var(--safe-top)) 14px calc(12px + var(--safe-bottom));
 }
 
+/* ---------- Canvas de partículas ---------- */
+#particles {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
 /* ---------- HUD ---------- */
 #hud {
+  position: relative;
   text-align: center;
   padding: 10px 0 6px;
 }
+.icon-btn {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.icon-btn:active { transform: scale(0.94); }
+.icon-btn.muted { opacity: 0.6; }
 .resource { display: flex; flex-direction: column; align-items: center; }
 .spores {
   font-size: clamp(2.2rem, 9vw, 3.2rem);
@@ -94,8 +118,8 @@ body::before {
 
 #planet {
   position: relative;
-  width: min(58vw, 240px);
-  height: min(58vw, 240px);
+  width: min(60vw, 250px);
+  height: min(60vw, 250px);
   border: none;
   border-radius: 50%;
   background: none;
@@ -111,35 +135,72 @@ body::before {
   100% { transform: scale(1); }
 }
 
-/* Cuerpo del planeta: interpola de gris (muerto) a verde (vivo) con --life */
-#planet-body {
+/* SVG del planeta: las capas cobran vida según --life (0..1) */
+#planet-svg {
   --life: 0;
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 30%,
-      hsl(calc(90 * var(--life)), calc(20% + 55% * var(--life)), calc(45% + 8% * var(--life))) 0%,
-      hsl(calc(90 * var(--life)), calc(15% + 45% * var(--life)), calc(22% + 6% * var(--life))) 70%,
-      hsl(220, 30%, 12%) 100%);
-  box-shadow:
-    inset -18px -18px 40px rgba(0,0,0,0.55),
-    inset 12px 12px 30px rgba(255,255,255,0.08),
-    0 0 calc(20px + 40px * var(--life)) hsla(140, 70%, 55%, calc(0.15 + 0.35 * var(--life)));
-  transition: background 0.6s ease, box-shadow 0.6s ease;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 0 calc(6px + 34px * var(--life)) hsla(140, 70%, 55%, calc(0.12 + 0.4 * var(--life))));
 }
-/* Brillo/atmósfera */
-#planet-glow {
-  position: absolute;
-  inset: -8%;
-  border-radius: 50%;
-  background: radial-gradient(circle, transparent 60%, rgba(88, 224, 138, 0.12) 75%, transparent 80%);
-  pointer-events: none;
-  animation: glowPulse 4s ease-in-out infinite;
+
+/* Océano: se llena de agua a media vida */
+.p-ocean {
+  opacity: clamp(0, calc((var(--life) - 0.22) * 2.4), 0.95);
+  transition: opacity 0.8s ease;
 }
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 0.9; transform: scale(1.03); }
+/* Continentes: aparecen y verdean con la vida */
+.p-land { opacity: clamp(0, calc((var(--life) - 0.12) * 2.6), 1); transition: opacity 0.8s ease; }
+.p-land path {
+  fill: hsl(95 calc(18% + 58% * var(--life)) calc(28% + 10% * var(--life)));
+  transition: fill 0.8s ease;
+}
+/* Vegetación: motas verdes claras que brotan a vida alta */
+.p-veg { opacity: clamp(0, calc((var(--life) - 0.55) * 2.6), 0.9); transition: opacity 0.8s ease; }
+.p-veg circle { fill: #b6f26a; }
+/* Nubes: derivan lentamente y aparecen a media-alta vida */
+.p-clouds { opacity: clamp(0, calc((var(--life) - 0.45) * 2.4), 0.7); transition: opacity 0.8s ease; }
+.p-clouds ellipse { fill: rgba(255,255,255,0.85); animation: cloudDrift 22s ease-in-out infinite; }
+.p-clouds ellipse:nth-child(2) { animation-duration: 30s; animation-direction: reverse; }
+.p-clouds ellipse:nth-child(3) { animation-duration: 26s; }
+@keyframes cloudDrift {
+  0%, 100% { transform: translateX(-8px); }
+  50% { transform: translateX(8px); }
+}
+/* Atmósfera exterior */
+.p-atmo {
+  fill: none;
+  stroke: hsla(150, 80%, 60%, 0.6);
+  stroke-width: clamp(0, calc(var(--life) * 6), 5);
+  opacity: clamp(0.06, calc(var(--life) * 0.85), 0.85);
+  transition: stroke-width 0.8s ease, opacity 0.8s ease;
+  animation: atmoPulse 4s ease-in-out infinite;
+}
+@keyframes atmoPulse { 0%,100% { r: 98px; } 50% { r: 100px; } }
+
+/* Barra de era */
+#era { width: min(60vw, 250px); text-align: center; }
+.era-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-2);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+.era-bar {
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.era-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px rgba(124,240,192,0.5);
+  transition: width 0.5s ease;
 }
 
 .tap-hint {
@@ -222,9 +283,30 @@ body::before {
   animation: floatUp 0.9s ease-out forwards;
   will-change: transform, opacity;
 }
+.float-num.hot {
+  color: var(--gold);
+  font-size: 1.7rem;
+  text-shadow: 0 0 12px rgba(255,214,107,0.7);
+}
 @keyframes floatUp {
   0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
   100% { opacity: 0; transform: translate(-50%, -160%) scale(1.2); }
+}
+
+/* ---------- Flash de celebración (subida de era) ---------- */
+#flash {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 42%, rgba(124,240,192,0.35), transparent 60%);
+}
+#flash.show { animation: flashFade 0.7s ease-out; }
+@keyframes flashFade {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* ---------- Toast ---------- */

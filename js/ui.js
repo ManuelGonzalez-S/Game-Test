@@ -4,17 +4,19 @@ const UI = (() => {
   const el = {};
   let _generatorNodes = {}; // id -> { row, cost, count, affordable }
   let _lastPerSec = -1;
+  let _combo = 0;
+  let _lastTapTime = 0;
 
   function cache() {
     el.spores = document.getElementById('spores');
     el.perSec = document.getElementById('per-sec');
     el.planet = document.getElementById('planet');
-    el.planetBody = document.getElementById('planet-body');
     el.tapHint = document.getElementById('tap-hint');
     el.generators = document.getElementById('generators');
     el.fx = document.getElementById('fx');
     el.btnSave = document.getElementById('btn-save');
     el.btnReset = document.getElementById('btn-reset');
+    el.btnSound = document.getElementById('btn-sound');
   }
 
   // Construye las filas de la tienda una sola vez.
@@ -49,6 +51,7 @@ const UI = (() => {
     if (buyGenerator(genId)) {
       render();
       pulse(_generatorNodes[genId].row);
+      if (typeof Sound !== 'undefined') Sound.buy();
     } else {
       // Feedback de "no puedes permitírtelo"
       const node = _generatorNodes[genId];
@@ -59,11 +62,14 @@ const UI = (() => {
   }
 
   // Número flotante al tocar el planeta.
-  function floatText(x, y, text) {
+  function floatText(x, y, text, combo = 0) {
     const span = document.createElement('span');
     span.className = 'float-num';
+    if (combo > 6) span.classList.add('hot');
+    // Pequeño desvío horizontal para que no se solapen en toques rápidos.
+    const jitter = (Math.random() - 0.5) * 40;
     span.textContent = '+' + text;
-    span.style.left = x + 'px';
+    span.style.left = (x + jitter) + 'px';
     span.style.top = y + 'px';
     el.fx.appendChild(span);
     span.addEventListener('animationend', () => span.remove());
@@ -78,17 +84,25 @@ const UI = (() => {
   function onPlanetTap(evt) {
     const value = doClick();
 
+    // Racha de toques: sube el "combo" si tocas rápido, si no se reinicia.
+    const now = performance.now();
+    if (now - _lastTapTime < 600) _combo = Math.min(_combo + 1, 20);
+    else _combo = 0;
+    _lastTapTime = now;
+
     // Posición del toque para el número flotante.
     let x, y;
-    if (evt.touches && evt.touches[0]) {
-      x = evt.touches[0].clientX; y = evt.touches[0].clientY;
-    } else if (evt.clientX !== undefined) {
+    if (evt.clientX !== undefined && evt.clientX !== 0) {
       x = evt.clientX; y = evt.clientY;
     } else {
       const r = el.planet.getBoundingClientRect();
       x = r.left + r.width / 2; y = r.top + r.height / 2;
     }
-    floatText(x, y, formatNumber(value));
+    floatText(x, y, formatNumber(value), _combo);
+
+    // Partículas + sonido (tono más agudo cuanto mayor el combo).
+    if (typeof Particles !== 'undefined') Particles.burstTap(x, y);
+    if (typeof Sound !== 'undefined') Sound.tap(_combo);
 
     // Feedback: pulso + vibración opcional.
     el.planet.classList.remove('tapped');
@@ -98,14 +112,6 @@ const UI = (() => {
 
     if (el.tapHint) el.tapHint.style.opacity = '0';
     render();
-  }
-
-  // Actualiza el aspecto del planeta según el total de esporas (bloom básico).
-  function updatePlanet() {
-    const t = state.totalSpores;
-    // 0..1 en escala logarítmica hasta ~1e7.
-    const life = Math.max(0, Math.min(1, Math.log10(t + 1) / 7));
-    el.planetBody.style.setProperty('--life', life.toFixed(3));
   }
 
   function render() {
@@ -128,7 +134,7 @@ const UI = (() => {
       node.row.classList.toggle('locked', !affordable);
     }
 
-    updatePlanet();
+    Bloom.update();
   }
 
   function bindEvents() {
@@ -147,6 +153,18 @@ const UI = (() => {
         toast('Jardín reiniciado ♻️');
       }
     });
+
+    el.btnSound.addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      Sound.setEnabled(state.soundEnabled);
+      updateSoundBtn();
+      saveGame();
+    });
+  }
+
+  function updateSoundBtn() {
+    el.btnSound.textContent = state.soundEnabled ? '🔊' : '🔇';
+    el.btnSound.classList.toggle('muted', !state.soundEnabled);
   }
 
   // Aviso breve tipo "toast".
@@ -161,9 +179,19 @@ const UI = (() => {
 
   function init() {
     cache();
+    Particles.init();
+    Bloom.init(onStageUp);
+    Sound.setEnabled(state.soundEnabled);
     buildShop();
     bindEvents();
+    updateSoundBtn();
     render();
+  }
+
+  // Callback cuando el planeta sube de era.
+  function onStageUp(stage) {
+    toast('✨ ¡Nueva era! ' + stage.emoji + ' ' + stage.name);
+    if (navigator.vibrate) navigator.vibrate([12, 40, 20]);
   }
 
   return { init, render, toast, floatText };

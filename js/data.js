@@ -26,6 +26,18 @@ const GAME_DATA = {
     { id: 'arboles',  name: 'Árboles',  emoji: '🌳', baseCost: 130000, baseProd: 260,
       desc: 'Bosques que llenan el aire de oxígeno.' },
   ],
+
+  // Eras del planeta: se desbloquean por esporas TOTALES producidas.
+  // Cada una cambia el aspecto del planeta y dispara una celebración.
+  stages: [
+    { name: 'Roca muerta',     emoji: '🪨', at: 0 },
+    { name: 'Primeros musgos', emoji: '🦠', at: 50 },
+    { name: 'Verdor',          emoji: '🌾', at: 1200 },
+    { name: 'Océanos',         emoji: '💧', at: 30000 },
+    { name: 'Bosques',         emoji: '🌳', at: 600000 },
+    { name: 'Mundo vivo',      emoji: '🦌', at: 12000000 },
+    { name: 'Paraíso',         emoji: '🌍', at: 300000000 },
+  ],
 };
 
 // Coste del siguiente ejemplar de un generador según cuántos ya tienes.

@@ -12,6 +12,7 @@ function defaultState() {
     totalClicks: 0,     // toques totales
     generators,         // id -> cantidad
     lastSeen: Date.now(),
+    soundEnabled: true, // sonido activado por defecto (arranca tras 1er toque)
     version: 1,
   };
 }

@@ -9,9 +9,13 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Canvas de partículas (detrás de los números flotantes) -->
+  <canvas id="particles"></canvas>
+
   <div id="app">
     <!-- Cabecera: recurso + producción -->
     <header id="hud">
+      <button id="btn-sound" class="icon-btn" aria-label="Activar o silenciar sonido">🔊</button>
       <div class="resource">
         <span id="spores" class="spores">0</span>
         <span class="resource-label">Esporas 🌱</span>
@@ -23,9 +27,50 @@
     <main id="stage">
       <div id="planet-wrap">
         <button id="planet" aria-label="Tocar el planeta para liberar esporas">
-          <span id="planet-body"></span>
-          <span id="planet-glow"></span>
+          <svg id="planet-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <radialGradient id="g-rock" cx="38%" cy="32%" r="78%">
+                <stop offset="0%" stop-color="#9c8b76"/>
+                <stop offset="55%" stop-color="#5f5449"/>
+                <stop offset="100%" stop-color="#2a251f"/>
+              </radialGradient>
+              <radialGradient id="g-ocean" cx="38%" cy="32%" r="80%">
+                <stop offset="0%" stop-color="#3fa3c4"/>
+                <stop offset="70%" stop-color="#1f6f8b"/>
+                <stop offset="100%" stop-color="#0e3a4d"/>
+              </radialGradient>
+              <radialGradient id="g-shade" cx="38%" cy="32%" r="82%">
+                <stop offset="52%" stop-color="rgba(0,0,0,0)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+              </radialGradient>
+              <clipPath id="planet-clip"><circle cx="100" cy="100" r="94"/></clipPath>
+            </defs>
+
+            <!-- Atmósfera (fuera del recorte) -->
+            <circle class="p-atmo" cx="100" cy="100" r="98"/>
+
+            <g clip-path="url(#planet-clip)">
+              <circle class="p-rock" cx="100" cy="100" r="94" fill="url(#g-rock)"/>
+              <circle class="p-ocean" cx="100" cy="100" r="94" fill="url(#g-ocean)"/>
+              <g class="p-land"></g>       <!-- continentes (poblados por bloom.js) -->
+              <g class="p-veg"></g>        <!-- vegetación / motas (bloom.js) -->
+              <g class="p-clouds">
+                <ellipse cx="70"  cy="72"  rx="26" ry="10"/>
+                <ellipse cx="128" cy="104" rx="30" ry="11"/>
+                <ellipse cx="92"  cy="140" rx="22" ry="9"/>
+              </g>
+              <circle class="p-shade" cx="100" cy="100" r="94" fill="url(#g-shade)"/>
+              <ellipse class="p-spec" cx="72" cy="64" rx="32" ry="20" fill="rgba(255,255,255,0.16)"/>
+            </g>
+          </svg>
         </button>
+
+        <!-- Indicador de era + progreso -->
+        <div id="era">
+          <div id="era-label" class="era-label">🪨 Roca muerta</div>
+          <div class="era-bar"><div id="era-fill" class="era-fill"></div></div>
+        </div>
+
         <div id="tap-hint" class="tap-hint">Toca el planeta 👆</div>
       </div>
     </main>
@@ -42,12 +87,18 @@
     </footer>
   </div>
 
-  <!-- Contenedor para números flotantes al tocar -->
+  <!-- Números flotantes al tocar -->
   <div id="fx"></div>
+
+  <!-- Flash de celebración al subir de era -->
+  <div id="flash"></div>
 
   <script src="js/format.js"></script>
   <script src="js/data.js"></script>
   <script src="js/state.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/bloom.js"></script>
   <script src="js/engine.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
