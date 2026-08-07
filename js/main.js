@@ -18,8 +18,8 @@
     }, 400);
   }
 
-  // 5. Autoguardado periódico.
-  setInterval(saveGame, 15000);
+  // 5. Autoguardado periódico (frecuente para no perder progreso en móvil).
+  setInterval(saveGame, 5000);
 
   // 6. Guardar al ocultar/cerrar la pestaña (clave en móvil).
   document.addEventListener('visibilitychange', () => {
