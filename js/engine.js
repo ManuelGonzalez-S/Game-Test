@@ -41,16 +41,43 @@ function generatorOutput(gen) {
   return owned * gen.baseProd * milestoneMultiplier(owned);
 }
 
-// Producción pasiva total (esporas/seg).
+// ---- Prestigio (Florecer) ----
+// Multiplicador permanente por Semillas Estelares.
+function prestigeMultiplier() {
+  return 1 + (state.seeds || 0) * GAME_DATA.prestige.bonusPerSeed;
+}
+// Semillas que se ganarían al florecer ahora (según esporas totales del run).
+function pendingSeeds() {
+  const p = GAME_DATA.prestige;
+  return Math.floor(Math.pow(Math.max(0, state.totalSpores) / p.seedScale, p.seedExponent));
+}
+function canFlorecer() {
+  return pendingSeeds() >= GAME_DATA.prestige.minToFlorecer;
+}
+// Ejecuta el prestigio: suma semillas y reinicia el run. Devuelve semillas ganadas.
+function florecer() {
+  const gain = pendingSeeds();
+  if (gain < GAME_DATA.prestige.minToFlorecer) return 0;
+  state.seeds = (state.seeds || 0) + gain;
+  state.floradas = (state.floradas || 0) + 1;
+  // Reinicio del run (se conservan: semillas, floradas, logros, toques totales, sonido).
+  state.spores = 0;
+  state.totalSpores = 0;
+  for (const g of GAME_DATA.generators) state.generators[g.id] = 0;
+  state.upgrades = {};
+  return gain;
+}
+
+// Producción pasiva total (esporas/seg), con prestigio incluido.
 function passiveProduction() {
   let total = 0;
   for (const g of GAME_DATA.generators) total += generatorOutput(g);
-  return total * globalMultiplier();
+  return total * globalMultiplier() * prestigeMultiplier();
 }
 
 // Esporas ganadas por un toque: base × multiplicadores + % de la producción/seg.
 function clickValue() {
-  let base = GAME_DATA.clickBase;
+  let base = GAME_DATA.clickBase * prestigeMultiplier();
   let pct = 0;
   for (const u of GAME_DATA.upgrades) {
     if (!isPurchased(u.id)) continue;
@@ -58,6 +85,25 @@ function clickValue() {
     if (u.cpsPct) pct += u.cpsPct;
   }
   return base + passiveProduction() * pct;
+}
+
+// ---- Logros ----
+// Comprueba todos los logros; devuelve un array de los recién desbloqueados.
+function checkAchievements() {
+  const newly = [];
+  for (const a of GAME_DATA.achievements) {
+    if (state.achievements[a.id]) continue;
+    if (a.check(state)) {
+      state.achievements[a.id] = true;
+      newly.push(a);
+    }
+  }
+  return newly;
+}
+function achievementsUnlockedCount() {
+  let n = 0;
+  for (const a of GAME_DATA.achievements) if (state.achievements[a.id]) n++;
+  return n;
 }
 
 // Compra una mejora si procede. Devuelve true si se compró.

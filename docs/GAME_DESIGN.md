@@ -136,12 +136,14 @@ Tono: zen, relajante, muy visual. El planeta cambia de aspecto según tu progres
 - El planeta evoluciona visualmente por eras (SVG por capas).
 - Feedback jugoso: partículas, ripples, celebración de era, sonido/vibración.
 
-### Fase 4 — Prestigio (Florecer)
-- Semillas Estelares, multiplicador permanente, flujo de reset.
+### Fase 4 — Prestigio (Florecer) ✅ HECHA
+- Semillas Estelares (raíz cúbica de esporas totales), multiplicador permanente
+  (+20%/semilla), flujo de reset con celebración. Pestaña dedicada.
 
-### Fase 5 — Retención & pulido
-- Logros/hitos, pantalla de "mientras no estabas", balanceo final,
-  accesibilidad, tema claro/oscuro, publicación.
+### Fase 5 — Retención & pulido ✅ HECHA
+- 13 logros con modal (bloqueados/desbloqueados), toasts al desbloquear.
+- Progreso offline con tiempo ausente. Icono de sonido SVG.
+- Pendiente futuro: balanceo fino, tema claro/oscuro, publicación.
 
 ---
 

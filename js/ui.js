@@ -19,14 +19,40 @@ const UI = (() => {
     el.tapHint = document.getElementById('tap-hint');
     el.generators = document.getElementById('generators');
     el.upgrades = document.getElementById('upgrades');
+    el.florecer = document.getElementById('florecer');
     el.tabGen = document.getElementById('tab-gen');
     el.tabUpg = document.getElementById('tab-upg');
+    el.tabFlo = document.getElementById('tab-flo');
     el.upgBadge = document.getElementById('upg-badge');
+    el.floBadge = document.getElementById('flo-badge');
+    el.floCurrent = document.getElementById('flo-current');
+    el.floBonus = document.getElementById('flo-bonus');
+    el.floGain = document.getElementById('flo-gain');
+    el.btnFlorecer = document.getElementById('btn-florecer');
+    el.floFloradas = document.getElementById('flo-floradas');
+    el.seedsStat = document.getElementById('seeds-stat');
     el.fx = document.getElementById('fx');
     el.btnSave = document.getElementById('btn-save');
     el.btnReset = document.getElementById('btn-reset');
     el.btnSound = document.getElementById('btn-sound');
+    el.btnTrophy = document.getElementById('btn-trophy');
+    el.achvModal = document.getElementById('achv-modal');
+    el.achvClose = document.getElementById('achv-close');
+    el.achvList = document.getElementById('achv-list');
+    el.achvCount = document.getElementById('achv-count');
   }
+
+  // Iconos de sonido (SVG, se ven consistentes en todos los dispositivos).
+  const SVG_SOUND_ON =
+    '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>' +
+    '<path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+  const SVG_SOUND_OFF =
+    '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M11 5 6 9H2v6h4l5 4z"/><line x1="23" y1="9" x2="17" y2="15"/>' +
+    '<line x1="17" y1="9" x2="23" y2="15"/></svg>';
 
   // Construye las filas de generadores una sola vez.
   function buildShop() {
@@ -182,6 +208,15 @@ const UI = (() => {
     }
 
     renderUpgrades();
+    renderFlorecer();
+
+    // Logros recién desbloqueados.
+    const newly = checkAchievements();
+    for (const a of newly) {
+      toast('🏆 Logro: ' + a.emoji + ' ' + a.name);
+      if (typeof Sound !== 'undefined') Sound.buy();
+    }
+
     Bloom.update();
   }
 
@@ -244,8 +279,91 @@ const UI = (() => {
     _activeTab = tab;
     el.tabGen.classList.toggle('active', tab === 'gen');
     el.tabUpg.classList.toggle('active', tab === 'upg');
+    el.tabFlo.classList.toggle('active', tab === 'flo');
     el.generators.hidden = tab !== 'gen';
     el.upgrades.hidden = tab !== 'upg';
+    el.florecer.hidden = tab !== 'flo';
+  }
+
+  // Actualiza el panel de Florecer y el indicador de semillas del HUD.
+  function renderFlorecer() {
+    const seeds = state.seeds || 0;
+    el.floCurrent.textContent = formatNumber(seeds);
+    const bonusPct = Math.round(seeds * GAME_DATA.prestige.bonusPerSeed * 100);
+    el.floBonus.textContent = '+' + bonusPct + '% a toda la producción';
+
+    const pend = pendingSeeds();
+    const can = canFlorecer();
+    if (can) {
+      el.floGain.innerHTML = 'Florecer ahora te dará <strong>+' +
+        formatNumber(pend) + ' ✨</strong>';
+    } else {
+      el.floGain.textContent = 'Necesitas más esporas totales para ganar tu primera semilla.';
+    }
+    el.btnFlorecer.disabled = !can;
+    el.floFloradas.textContent = state.floradas > 0
+      ? 'Has florecido ' + state.floradas + (state.floradas === 1 ? ' vez' : ' veces')
+      : '';
+
+    // Badge "!" en la pestaña cuando puedes florecer.
+    el.floBadge.hidden = !can;
+
+    // Indicador de semillas en el HUD.
+    if (seeds > 0) {
+      el.seedsStat.hidden = false;
+      el.seedsStat.textContent = '✨ ' + formatNumber(seeds);
+    } else {
+      el.seedsStat.hidden = true;
+    }
+  }
+
+  function onFlorecer() {
+    if (!canFlorecer()) return;
+    const gain = pendingSeeds();
+    if (!confirm('🌸 ¿Dejar florecer el planeta?\n\nReinicias esporas, generadores y ' +
+        'mejoras, pero ganas +' + formatNumber(gain) + ' Semillas Estelares ✨ ' +
+        '(bonus permanente de producción).')) return;
+
+    florecer();
+    Bloom.reset();
+    _upgSignature = '__reset__'; // fuerza reconstrucción de mejoras
+    _combo = 0;
+    _lastPerSec = -1; _lastTap = -1;
+    if (typeof Particles !== 'undefined') Particles.celebrate();
+    const flash = document.getElementById('flash');
+    if (flash) { flash.classList.remove('show'); void flash.offsetWidth; flash.classList.add('show'); }
+    if (typeof Sound !== 'undefined') Sound.stageUp();
+    if (navigator.vibrate) navigator.vibrate([15, 50, 30]);
+    setTab('gen');
+    render();
+    saveGame();
+    toast('🌸 ¡El planeta ha florecido! +' + formatNumber(gain) + ' ✨');
+  }
+
+  // ---- Logros ----
+  function renderAchievements() {
+    el.achvList.innerHTML = '';
+    for (const a of GAME_DATA.achievements) {
+      const done = !!state.achievements[a.id];
+      const item = document.createElement('div');
+      item.className = 'achv-item' + (done ? ' done' : '');
+      item.innerHTML = `
+        <span class="achv-emoji">${done ? a.emoji : '🔒'}</span>
+        <span class="achv-info">
+          <span class="achv-name">${done ? a.name : '???'}</span>
+          <span class="achv-desc">${a.desc}</span>
+        </span>`;
+      el.achvList.appendChild(item);
+    }
+    const total = GAME_DATA.achievements.length;
+    el.achvCount.textContent = achievementsUnlockedCount() + '/' + total;
+  }
+  function openAchievements() {
+    renderAchievements();
+    el.achvModal.hidden = false;
+  }
+  function closeAchievements() {
+    el.achvModal.hidden = true;
   }
 
   function bindEvents() {
@@ -274,10 +392,18 @@ const UI = (() => {
 
     el.tabGen.addEventListener('click', () => setTab('gen'));
     el.tabUpg.addEventListener('click', () => setTab('upg'));
+    el.tabFlo.addEventListener('click', () => setTab('flo'));
+    el.btnFlorecer.addEventListener('click', onFlorecer);
+
+    el.btnTrophy.addEventListener('click', openAchievements);
+    el.achvClose.addEventListener('click', closeAchievements);
+    el.achvModal.addEventListener('click', (e) => {
+      if (e.target === el.achvModal) closeAchievements(); // clic fuera del cuadro
+    });
   }
 
   function updateSoundBtn() {
-    el.btnSound.textContent = state.soundEnabled ? '🔊' : '🔇';
+    el.btnSound.innerHTML = state.soundEnabled ? SVG_SOUND_ON : SVG_SOUND_OFF;
     el.btnSound.classList.toggle('muted', !state.soundEnabled);
   }
 

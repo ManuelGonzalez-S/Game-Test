@@ -82,18 +82,25 @@ body::before {
 .icon-btn {
   position: absolute;
   top: 6px;
-  right: 0;
   width: 42px;
   height: 42px;
   border-radius: 50%;
   border: 1px solid var(--panel-border);
   background: var(--panel);
+  color: var(--text);
   font-size: 1.1rem;
   cursor: pointer;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
 }
+#btn-sound { right: 0; }
+#btn-trophy { left: 0; }
 .icon-btn:active { transform: scale(0.94); }
 .icon-btn.muted { opacity: 0.6; }
+.seeds-stat { font-size: 0.9rem; color: var(--gold); font-weight: 700; }
 .resource { display: flex; flex-direction: column; align-items: center; }
 .spores {
   font-size: clamp(2.2rem, 9vw, 3.2rem);
@@ -237,15 +244,21 @@ body::before {
 .tab {
   flex: 1;
   position: relative;
-  padding: 10px;
+  padding: 10px 4px;
   border-radius: 10px;
   border: 1px solid var(--panel-border);
   background: rgba(255,255,255,0.03);
   color: var(--text-dim);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
   transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+#tab-flo.active {
+  color: var(--text);
+  background: rgba(255,214,107,0.12);
+  border-color: rgba(255,214,107,0.5);
 }
 .tab.active {
   color: var(--text);
@@ -319,6 +332,93 @@ body::before {
 .gen-buy { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
 .gen-cost { font-weight: 700; font-size: 0.9rem; color: var(--gold); font-variant-numeric: tabular-nums; }
 .gen-count { font-size: 0.85rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+/* ---------- Panel Florecer (prestigio) ---------- */
+.flo-card {
+  text-align: center;
+  padding: 8px 6px 4px;
+}
+.flo-seeds { font-size: 1.3rem; font-weight: 800; color: var(--gold); }
+.flo-bonus { font-size: 0.95rem; color: var(--accent); font-weight: 700; margin-top: 4px; }
+.flo-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin: 14px 4px; }
+.flo-desc strong { color: var(--text); }
+.flo-gain { font-size: 1rem; margin: 10px 0; color: var(--text); }
+.flo-gain strong { color: var(--gold); }
+.flo-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #ff8ac4, #c86bff);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(200,107,255,0.35);
+  transition: transform 0.1s ease, opacity 0.2s ease;
+}
+.flo-btn:active { transform: scale(0.98); }
+.flo-btn:disabled {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-dim);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.flo-foot { font-size: 0.8rem; color: var(--text-dim); margin-top: 12px; }
+
+/* ---------- Modal de logros ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 8, 20, 0.7);
+  backdrop-filter: blur(4px);
+}
+.modal[hidden] { display: none; }
+.modal-box {
+  width: 100%;
+  max-width: 460px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-2);
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.modal-head h2 { font-size: 1.2rem; }
+.achv-count { font-size: 0.9rem; color: var(--accent); font-weight: 700; margin-left: 6px; }
+.modal-close {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.achv-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; }
+.achv-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--panel-border);
+  opacity: 0.55;
+}
+.achv-item.done { opacity: 1; border-color: rgba(88,224,138,0.4); background: rgba(88,224,138,0.07); }
+.achv-emoji { font-size: 1.6rem; flex-shrink: 0; }
+.achv-info { display: flex; flex-direction: column; min-width: 0; }
+.achv-name { font-weight: 700; font-size: 0.95rem; }
+.achv-desc { font-size: 0.78rem; color: var(--text-dim); }
 
 /* ---------- Footer ---------- */
 #footer { display: flex; gap: 10px; margin-top: 12px; }

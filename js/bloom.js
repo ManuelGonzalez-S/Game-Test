@@ -100,6 +100,13 @@ const Bloom = (() => {
     }
   }
 
+  // Reinicia el seguimiento de eras (tras florecer: el planeta vuelve a nacer).
+  function reset() {
+    currentStage = stageIndex(state.totalSpores);
+    lastLife = -1;
+    update(true);
+  }
+
   function celebrate(stage) {
     Particles.celebrate();
     if (flash) {
@@ -111,5 +118,5 @@ const Bloom = (() => {
     if (onStageUp) onStageUp(stage);
   }
 
-  return { init, update };
+  return { init, update, reset };
 })();

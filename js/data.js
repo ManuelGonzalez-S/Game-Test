@@ -82,7 +82,48 @@ const GAME_DATA = {
     { name: 'Mundo vivo',      emoji: '🦌', at: 12000000 },
     { name: 'Paraíso',         emoji: '🌍', at: 300000000 },
   ],
+
+  // Prestigio ("Florecer"): reinicia el planeta a cambio de Semillas Estelares (✨),
+  // que dan un multiplicador permanente a toda la producción.
+  prestige: {
+    seedScale: 1e6,        // divisor de esporas totales
+    seedExponent: 1 / 3,   // raíz cúbica -> crecimiento suave
+    bonusPerSeed: 0.2,     // +20% de producción por semilla
+    minToFlorecer: 1,      // semillas mínimas para poder florecer
+  },
+
+  // Logros: se comprueban con `check(state)`. Una vez desbloqueados, permanentes.
+  achievements: [
+    { id: 'firstTap',  emoji: '👆', name: 'Primer aliento',   desc: 'Toca el planeta por primera vez.',        check: s => s.totalClicks >= 1 },
+    { id: 'clicks100', emoji: '✋', name: 'Manos verdes',      desc: 'Toca el planeta 100 veces.',              check: s => s.totalClicks >= 100 },
+    { id: 'clicks1k',  emoji: '🙌', name: 'Jardinero incansable', desc: 'Toca el planeta 1.000 veces.',        check: s => s.totalClicks >= 1000 },
+    { id: 'firstGen',  emoji: '🦠', name: 'Chispa de vida',    desc: 'Compra tu primera forma de vida.',        check: s => anyGenerator(s) },
+    { id: 'spores1k',  emoji: '🌱', name: 'Brotes',            desc: 'Acumula 1.000 esporas en total.',         check: s => s.totalSpores >= 1000 },
+    { id: 'oceans',    emoji: '💧', name: 'Océanos',           desc: 'Alcanza la era de los Océanos.',          check: s => s.totalSpores >= 30000 },
+    { id: 'forests',   emoji: '🌳', name: 'Bosques',           desc: 'Alcanza la era de los Bosques.',          check: s => s.totalSpores >= 600000 },
+    { id: 'living',    emoji: '🦌', name: 'Mundo vivo',        desc: 'Alcanza la era del Mundo vivo.',          check: s => s.totalSpores >= 12000000 },
+    { id: 'paradise',  emoji: '🌍', name: 'Paraíso',           desc: 'Alcanza la era del Paraíso.',             check: s => s.totalSpores >= 300000000 },
+    { id: 'allGens',   emoji: '🧬', name: 'Biodiversidad',     desc: 'Ten al menos una de cada forma de vida.', check: s => allGenerators(s) },
+    { id: 'gen50',     emoji: '⭐', name: 'Colonia',           desc: 'Ten 50 de una misma forma de vida.',      check: s => maxGeneratorCount(s) >= 50 },
+    { id: 'firstFlor', emoji: '🌸', name: 'Renacer',           desc: 'Florece tu planeta por primera vez.',     check: s => (s.floradas || 0) >= 1 },
+    { id: 'seeds10',   emoji: '✨', name: 'Sembradora estelar', desc: 'Reúne 10 Semillas Estelares.',           check: s => (s.seeds || 0) >= 10 },
+  ],
 };
+
+// Helpers para condiciones de logros.
+function anyGenerator(s) {
+  for (const g of GAME_DATA.generators) if ((s.generators[g.id] || 0) > 0) return true;
+  return false;
+}
+function allGenerators(s) {
+  for (const g of GAME_DATA.generators) if ((s.generators[g.id] || 0) < 1) return false;
+  return true;
+}
+function maxGeneratorCount(s) {
+  let m = 0;
+  for (const g of GAME_DATA.generators) m = Math.max(m, s.generators[g.id] || 0);
+  return m;
+}
 
 // Coste del siguiente ejemplar de un generador según cuántos ya tienes.
 function generatorCost(gen, owned) {

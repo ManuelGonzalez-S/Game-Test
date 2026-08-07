@@ -12,6 +12,9 @@ function defaultState() {
     totalClicks: 0,     // toques totales
     generators,         // id -> cantidad
     upgrades: {},       // id -> true (mejoras compradas)
+    seeds: 0,           // Semillas Estelares (prestigio, permanentes)
+    floradas: 0,        // nº de veces que has florecido
+    achievements: {},   // id -> true (logros desbloqueados)
     lastSeen: Date.now(),
     soundEnabled: true, // sonido activado por defecto (arranca tras 1er toque)
     version: 1,
@@ -43,6 +46,9 @@ function loadGame() {
       if (typeof state.generators[g.id] !== 'number') state.generators[g.id] = 0;
     }
     if (!state.upgrades || typeof state.upgrades !== 'object') state.upgrades = {};
+    if (!state.achievements || typeof state.achievements !== 'object') state.achievements = {};
+    if (typeof state.seeds !== 'number') state.seeds = 0;
+    if (typeof state.floradas !== 'number') state.floradas = 0;
     return true;
   } catch (e) {
     console.warn('Guardado corrupto, empezando de cero:', e);
