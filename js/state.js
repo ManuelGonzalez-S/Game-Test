@@ -16,6 +16,9 @@ function defaultState() {
     totalSeeds: 0,      // semillas ganadas en total (para logros)
     tree: {},           // id de nodo -> true (nodos del árbol comprados)
     floradas: 0,        // nº de veces que has florecido
+    nucleos: 0,         // Núcleos Estelares (2º prestigio, permanentes)
+    seedsSinceSupernova: 0, // semillas ganadas desde la última Supernova
+    supernovas: 0,      // nº de supernovas realizadas
     achievements: {},   // id -> true (logros desbloqueados)
     lastSeen: Date.now(),
     soundEnabled: true, // sonido activado por defecto (arranca tras 1er toque)
@@ -53,6 +56,10 @@ function loadGame() {
     if (typeof state.seeds !== 'number') state.seeds = 0;
     if (typeof state.totalSeeds !== 'number') state.totalSeeds = state.seeds || 0;
     if (typeof state.floradas !== 'number') state.floradas = 0;
+    if (typeof state.nucleos !== 'number') state.nucleos = 0;
+    if (typeof state.supernovas !== 'number') state.supernovas = 0;
+    // Da crédito a las semillas ya ganadas para la primera Supernova.
+    if (typeof state.seedsSinceSupernova !== 'number') state.seedsSinceSupernova = state.totalSeeds || 0;
     return true;
   } catch (e) {
     console.warn('Guardado corrupto, empezando de cero:', e);

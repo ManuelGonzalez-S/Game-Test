@@ -121,6 +121,8 @@ body::before {
 }
 .per-sec { font-size: 0.95rem; color: var(--accent); font-weight: 600; }
 .per-tap { font-size: 0.9rem; color: var(--text-dim); font-weight: 600; }
+.seeds-stat { font-size: 0.9rem; color: var(--gold); font-weight: 700; }
+.nucleos-stat { font-size: 0.9rem; color: #c6a8ff; font-weight: 700; }
 
 /* ---------- Planeta ---------- */
 #stage {
@@ -292,6 +294,26 @@ body::before {
   padding: 24px 12px;
 }
 
+/* Selector de cantidad de compra (×1/×10/×100/Máx) */
+.buy-qty { display: flex; gap: 6px; margin-bottom: 4px; }
+.qty-btn {
+  flex: 1;
+  padding: 7px 4px;
+  border-radius: 9px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.qty-btn.active {
+  color: var(--text);
+  background: rgba(88,224,138,0.14);
+  border-color: rgba(88,224,138,0.5);
+}
+
 .gen-row {
   display: flex;
   align-items: center;
@@ -365,6 +387,31 @@ body::before {
   cursor: not-allowed;
 }
 .flo-foot { font-size: 0.8rem; color: var(--text-dim); margin-top: 12px; }
+
+/* Tarjeta de Supernova (2º prestigio) */
+.nova-card { border: 1px solid rgba(198,168,255,0.35); border-radius: 14px; background: rgba(120,80,200,0.06); }
+.nova-card .flo-seeds { color: #c6a8ff; }
+.nova-card .flo-bonus { color: #c6a8ff; }
+.nova-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #6b8cff, #b06bff 55%, #ff8ac4);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 22px rgba(150,100,255,0.4);
+  transition: transform 0.1s ease, opacity 0.2s ease;
+}
+.nova-btn:active { transform: scale(0.98); }
+.nova-btn:disabled {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-dim);
+  box-shadow: none;
+  cursor: not-allowed;
+}
 
 /* ---------- Árbol de Semillas ---------- */
 .tree-title {

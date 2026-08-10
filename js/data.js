@@ -98,6 +98,15 @@ const GAME_DATA = {
     minToFlorecer: 3,      // semillas mínimas para el 1er Florecer (que valga la pena)
   },
 
+  // 2º prestigio ("Supernova"): reinicia TODA la capa de Semillas (semillas, árbol,
+  // floradas) a cambio de Núcleos Estelares (🌠), que dan poder permanente enorme.
+  prestige2: {
+    seedScale: 500,          // semillas acumuladas por Núcleo (divisor)
+    exponent: 0.5,           // raíz cuadrada
+    prodPerNucleo: 3,        // ×3 producción (multiplicativo) por cada Núcleo
+    seedGainPerNucleo: 0.25, // +25% de Semillas al florecer por cada Núcleo
+  },
+
   // Árbol de Semillas: cada nodo cuesta ✨ y es permanente. `req` = nodo previo.
   // Efectos posibles: prodMult, clickMult, clickCps, group{base|mid|adv|all, mult},
   //   offlineRate, offlineCap (seg), startGen{group,n}, seedGainMult, startUpgrades[].
@@ -147,6 +156,8 @@ const GAME_DATA = {
     { id: 'firstFlor', emoji: '🌸', name: 'Renacer',           desc: 'Florece tu planeta por primera vez.',     check: s => (s.floradas || 0) >= 1 },
     { id: 'seeds10',   emoji: '✨', name: 'Sembradora estelar', desc: 'Gana 10 Semillas Estelares en total.',   check: s => (s.totalSeeds || 0) >= 10 },
     { id: 'tree5',     emoji: '🌳', name: 'Jardinero cósmico', desc: 'Compra 5 nodos del Árbol de Semillas.',   check: s => treeNodeCount(s) >= 5 },
+    { id: 'firstNova', emoji: '🌠', name: 'Supernova',        desc: 'Provoca tu primera Supernova.',           check: s => (s.supernovas || 0) >= 1 },
+    { id: 'nucleos5',  emoji: '💥', name: 'Corazón estelar',  desc: 'Reúne 5 Núcleos Estelares.',              check: s => (s.nucleos || 0) >= 5 },
   ],
 };
 

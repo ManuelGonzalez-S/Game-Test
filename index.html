@@ -37,6 +37,7 @@
         <span id="per-sec" class="per-sec">0 /seg</span>
         <span id="per-tap" class="per-tap">👆 +1</span>
         <span id="seeds-stat" class="seeds-stat" hidden></span>
+        <span id="nucleos-stat" class="nucleos-stat" hidden></span>
       </div>
     </header>
 
@@ -120,6 +121,21 @@
         </div>
         <h3 class="tree-title">🌳 Árbol de Semillas</h3>
         <div id="tree" class="tree"></div>
+
+        <h3 class="tree-title">🌠 Supernova</h3>
+        <div class="flo-card nova-card">
+          <div class="flo-seeds"><span id="nova-current">0</span> 🌠 Núcleos Estelares</div>
+          <div id="nova-bonus" class="flo-bonus">×1 producción</div>
+          <p class="flo-desc">
+            Cuando ya hayas exprimido el Árbol, una <strong>Supernova</strong> reinicia
+            toda la capa de Semillas (semillas, árbol y floradas) a cambio de
+            <strong>Núcleos Estelares</strong>, que multiplican tu producción
+            <strong>×3 cada uno para siempre</strong> y aceleran las Semillas.
+          </p>
+          <div id="nova-gain" class="flo-gain"></div>
+          <button id="btn-supernova" class="nova-btn" disabled>🌠 Supernova</button>
+          <div id="nova-foot" class="flo-foot"></div>
+        </div>
       </div>
     </section>
 
