@@ -105,7 +105,7 @@ function buyTreeNode(id) {
 function pendingSeeds() {
   const p = GAME_DATA.prestige;
   const raw = Math.pow(Math.max(0, state.totalSpores) / p.seedScale, p.seedExponent);
-  return Math.floor(raw * treeSeedGainMult());
+  return Math.floor(raw * treeSeedGainMult() * nucleoSeedGainMult());
 }
 function canFlorecer() {
   return pendingSeeds() >= GAME_DATA.prestige.minToFlorecer;
@@ -137,6 +137,7 @@ function florecer() {
   if (gain < GAME_DATA.prestige.minToFlorecer) return 0;
   state.seeds = (state.seeds || 0) + gain;
   state.totalSeeds = (state.totalSeeds || 0) + gain;
+  state.seedsSinceSupernova = (state.seedsSinceSupernova || 0) + gain;
   state.floradas = (state.floradas || 0) + 1;
   // Reinicio del run (se conservan: semillas, árbol, floradas, logros, toques, sonido).
   state.spores = 0;
@@ -153,11 +154,49 @@ function generatorOutput(gen) {
   return owned * gen.baseProd * milestoneMultiplier(owned) * treeGroupMult(gen.id);
 }
 
+// ---- 2º prestigio (Supernova / Núcleos Estelares) ----
+// Multiplicador de producción por Núcleos (multiplicativo: prodPerNucleo ^ nucleos).
+function nucleoProdMult() {
+  const n = state.nucleos || 0;
+  if (n <= 0) return 1;
+  return Math.pow(GAME_DATA.prestige2.prodPerNucleo, n);
+}
+// Bonus de ganancia de semillas por Núcleos (+seedGainPerNucleo por núcleo).
+function nucleoSeedGainMult() {
+  return 1 + (state.nucleos || 0) * GAME_DATA.prestige2.seedGainPerNucleo;
+}
+// Núcleos que se ganarían al hacer Supernova ahora.
+function pendingNucleos() {
+  const p = GAME_DATA.prestige2;
+  return Math.floor(Math.pow(Math.max(0, state.seedsSinceSupernova || 0) / p.seedScale, p.exponent));
+}
+function canSupernova() {
+  return pendingNucleos() >= 1;
+}
+// Ejecuta la Supernova: gana Núcleos y reinicia TODA la capa de Semillas.
+function supernova() {
+  const gain = pendingNucleos();
+  if (gain < 1) return 0;
+  state.nucleos = (state.nucleos || 0) + gain;
+  state.supernovas = (state.supernovas || 0) + 1;
+  // Reinicia la capa de semillas (se conservan: núcleos, logros, toques, ajustes).
+  state.seeds = 0;
+  state.tree = {};
+  state.floradas = 0;
+  state.seedsSinceSupernova = 0;
+  // Reinicio del run actual.
+  state.spores = 0;
+  state.totalSpores = 0;
+  for (const g of GAME_DATA.generators) state.generators[g.id] = 0;
+  state.upgrades = {};
+  return gain;
+}
+
 // Producción pasiva total (esporas/seg).
 function passiveProduction() {
   let total = 0;
   for (const g of GAME_DATA.generators) total += generatorOutput(g);
-  return total * globalMultiplier() * treeGlobalMult();
+  return total * globalMultiplier() * treeGlobalMult() * nucleoProdMult();
 }
 
 // Esporas ganadas por un toque: base × multiplicadores + % de la producción/seg.
@@ -228,6 +267,52 @@ function buyGenerator(genId) {
   state.spores -= cost;
   state.generators[genId] = owned + 1;
   return true;
+}
+
+// Coste total de comprar `k` ejemplares empezando desde `owned`.
+function bulkCost(gen, owned, k) {
+  let c = 0;
+  for (let i = 0; i < k; i++) c += generatorCost(gen, owned + i);
+  return c;
+}
+// Cuántos ejemplares se pueden pagar con `spores` (y su coste), con tope de seguridad.
+function maxAffordable(gen, owned, spores) {
+  let k = 0, c = 0;
+  while (k < 100000) {
+    const next = generatorCost(gen, owned + k);
+    if (c + next > spores) break;
+    c += next; k++;
+  }
+  return { k, c };
+}
+// Coste a mostrar para la cantidad seleccionada ('max' -> coste de lo asequible, mín 1).
+function bulkPreview(genId, qty) {
+  const gen = GAME_DATA.generators.find(g => g.id === genId);
+  const owned = state.generators[genId] || 0;
+  if (qty === 'max') {
+    const { k, c } = maxAffordable(gen, owned, state.spores);
+    if (k < 1) return { k: 1, cost: generatorCost(gen, owned), affordable: false };
+    return { k, cost: c, affordable: true };
+  }
+  const cost = bulkCost(gen, owned, qty);
+  return { k: qty, cost, affordable: state.spores >= cost };
+}
+// Compra en lote. Devuelve cuántos se compraron.
+function buyGeneratorBulk(genId, qty) {
+  const gen = GAME_DATA.generators.find(g => g.id === genId);
+  if (!gen) return 0;
+  const owned = state.generators[genId] || 0;
+  let k, cost;
+  if (qty === 'max') {
+    const m = maxAffordable(gen, owned, state.spores);
+    k = m.k; cost = m.c;
+  } else {
+    k = qty; cost = bulkCost(gen, owned, k);
+  }
+  if (k < 1 || state.spores < cost) return 0;
+  state.spores -= cost;
+  state.generators[genId] = owned + k;
+  return k;
 }
 
 // ---- Game loop (tick fijo + acumulador) ----

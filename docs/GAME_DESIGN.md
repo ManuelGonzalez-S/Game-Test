@@ -75,6 +75,11 @@ Tono: zen, relajante, muy visual. El planeta cambia de aspecto según tu progres
   - 🌙 *Letargo* — tasa y tope del progreso offline.
   - 🧬 *Sinergia* — multiplicadores por grupo de generadores (base/medio/avanzado).
   - ✨ *Cosecha* — meta: head-start (empezar con generadores/mejoras) y +% semillas.
+- **2º prestigio (Supernova):** al acumular Semillas (500 por Núcleo, raíz cuadrada)
+  puedes reiniciar TODA la capa de Semillas (semillas + árbol + floradas) a cambio de
+  **Núcleos Estelares** (`floor((seedsDesdeSupernova/500)^0.5)`): cada Núcleo da **×3
+  producción** (multiplicativo) y **+25% semillas**. Bucle meta que compone.
+- **Compra en lote:** selector ×1 / ×10 / ×100 / Máx para comprar generadores.
 - **Logros / hitos:** recompensas por totales, por generadores, por toques.
 - **Bloom visual:** el planeta evoluciona (color, elementos, criaturas) según el
   total de Esporas producidas → recompensa visible al progreso.

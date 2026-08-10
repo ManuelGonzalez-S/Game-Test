@@ -6,6 +6,8 @@ const UI = (() => {
   let _upgradeNodes = {};   // id -> card
   let _treeNodes = {};      // id -> card (nodos del árbol)
   let _upgSignature = '';
+  let _buyQty = 1;          // cantidad de compra: 1 | 10 | 100 | 'max'
+  let _qtyBtns = {};        // valor -> botón del selector
   const BRANCH_EMOJI = { Fertilidad: '🌿', Vitalidad: '👆', Letargo: '🌙', Sinergia: '🧬', Cosecha: '✨' };
   let _activeTab = 'gen';
   let _lastPerSec = -1;
@@ -33,7 +35,13 @@ const UI = (() => {
     el.btnFlorecer = document.getElementById('btn-florecer');
     el.floFloradas = document.getElementById('flo-floradas');
     el.tree = document.getElementById('tree');
+    el.novaCurrent = document.getElementById('nova-current');
+    el.novaBonus = document.getElementById('nova-bonus');
+    el.novaGain = document.getElementById('nova-gain');
+    el.btnSupernova = document.getElementById('btn-supernova');
+    el.novaFoot = document.getElementById('nova-foot');
     el.seedsStat = document.getElementById('seeds-stat');
+    el.nucleosStat = document.getElementById('nucleos-stat');
     el.fx = document.getElementById('fx');
     el.btnSave = document.getElementById('btn-save');
     el.btnReset = document.getElementById('btn-reset');
@@ -68,6 +76,21 @@ const UI = (() => {
   function buildShop() {
     el.generators.innerHTML = '';
     _generatorNodes = {};
+
+    // Selector de cantidad de compra (×1 / ×10 / ×100 / Máx).
+    const qtyBar = document.createElement('div');
+    qtyBar.className = 'buy-qty';
+    _qtyBtns = {};
+    for (const q of [1, 10, 100, 'max']) {
+      const b = document.createElement('button');
+      b.className = 'qty-btn' + (q === _buyQty ? ' active' : '');
+      b.textContent = q === 'max' ? 'Máx' : '×' + q;
+      b.addEventListener('click', () => setBuyQty(q));
+      qtyBar.appendChild(b);
+      _qtyBtns[q] = b;
+    }
+    el.generators.appendChild(qtyBar);
+
     for (const gen of GAME_DATA.generators) {
       const row = document.createElement('button');
       row.className = 'gen-row';
@@ -95,13 +118,14 @@ const UI = (() => {
 
   function onBuy(genId) {
     const before = state.generators[genId] || 0;
-    if (buyGenerator(genId)) {
+    const bought = buyGeneratorBulk(genId, _buyQty);
+    if (bought > 0) {
       const after = state.generators[genId];
       render();
       pulse(_generatorNodes[genId].row);
       if (typeof Sound !== 'undefined') Sound.buy();
-      // ¿Se ha alcanzado un milestone? (x2 producción del generador)
-      if (GAME_DATA.milestones.includes(after)) {
+      // ¿Se ha cruzado algún milestone? (×2 producción del generador)
+      if (milestoneMultiplier(after) > milestoneMultiplier(before)) {
         const gen = GAME_DATA.generators.find(g => g.id === genId);
         toast('⭐ ' + gen.name + ' ×2 producción');
         const row = _generatorNodes[genId].row;
@@ -118,6 +142,14 @@ const UI = (() => {
       void node.row.offsetWidth; // reflow para reiniciar animación
       node.row.classList.add('shake');
     }
+  }
+
+  function setBuyQty(q) {
+    _buyQty = q;
+    for (const key of [1, 10, 100, 'max']) {
+      if (_qtyBtns[key]) _qtyBtns[key].classList.toggle('active', key === q);
+    }
+    render();
   }
 
   function onBuyUpgrade(id) {
@@ -199,12 +231,12 @@ const UI = (() => {
     for (const gen of GAME_DATA.generators) {
       const node = _generatorNodes[gen.id];
       const owned = state.generators[gen.id] || 0;
-      const cost = generatorCost(gen, owned);
-      node.cost.textContent = formatNumber(cost) + ' 🌱';
+      const pv = bulkPreview(gen.id, _buyQty);
+      const qtyLabel = _buyQty === 'max' ? (pv.affordable ? ' (×' + pv.k + ')' : '') : ' ×' + pv.k;
+      node.cost.textContent = formatNumber(pv.cost) + ' 🌱' + (_buyQty === 1 ? '' : qtyLabel);
       node.count.textContent = owned;
-      const affordable = state.spores >= cost;
-      node.row.classList.toggle('affordable', affordable);
-      node.row.classList.toggle('locked', !affordable);
+      node.row.classList.toggle('affordable', pv.affordable);
+      node.row.classList.toggle('locked', !pv.affordable);
 
       // Info de milestone (o descripción si aún no se ha comprado ninguno).
       if (owned > 0) {
@@ -387,6 +419,60 @@ const UI = (() => {
     } else {
       el.seedsStat.hidden = true;
     }
+
+    renderSupernova();
+  }
+
+  // Panel de Supernova (2º prestigio) + indicador de Núcleos en el HUD.
+  function renderSupernova() {
+    const nuc = state.nucleos || 0;
+    el.novaCurrent.textContent = formatNumber(nuc);
+    el.novaBonus.textContent = '×' + formatNumber(nucleoProdMult()) + ' producción' +
+      (nuc > 0 ? ' · +' + Math.round(nuc * GAME_DATA.prestige2.seedGainPerNucleo * 100) + '% ✨' : '');
+
+    const pend = pendingNucleos();
+    const can = canSupernova();
+    const need = GAME_DATA.prestige2.seedScale;
+    if (can) {
+      el.novaGain.innerHTML = 'Supernova ahora te dará <strong>+' + formatNumber(pend) + ' 🌠</strong>';
+    } else {
+      el.novaGain.innerHTML = 'Necesitas <strong>' + formatNumber(need) + ' ✨</strong> acumuladas ' +
+        '(llevas ' + formatNumber(state.seedsSinceSupernova || 0) + ')';
+    }
+    el.btnSupernova.disabled = !can;
+    el.novaFoot.textContent = state.supernovas > 0
+      ? 'Supernovas: ' + state.supernovas
+      : '';
+
+    if (nuc > 0) {
+      el.nucleosStat.hidden = false;
+      el.nucleosStat.textContent = '🌠 ' + formatNumber(nuc);
+    } else {
+      el.nucleosStat.hidden = true;
+    }
+  }
+
+  function onSupernova() {
+    if (!canSupernova()) return;
+    const gain = pendingNucleos();
+    if (!confirm('🌠 ¿Provocar una SUPERNOVA?\n\n⚠️ Reinicia TODO tu progreso de Semillas: ' +
+        'semillas, el Árbol entero y las floradas.\n\nA cambio ganas +' + formatNumber(gain) +
+        ' Núcleos Estelares 🌠 (×3 producción permanente cada uno).')) return;
+
+    supernova();
+    Bloom.reset();
+    _upgSignature = '__reset__';
+    _combo = 0;
+    _lastPerSec = -1; _lastTap = -1;
+    if (typeof Particles !== 'undefined') { Particles.celebrate(); Particles.celebrate(); }
+    const flash = document.getElementById('flash');
+    if (flash) { flash.classList.remove('show'); void flash.offsetWidth; flash.classList.add('show'); }
+    if (typeof Sound !== 'undefined') Sound.stageUp();
+    if (navigator.vibrate) navigator.vibrate([20, 60, 20, 60, 40]);
+    setTab('gen');
+    render();
+    saveGame();
+    toast('🌠 ¡SUPERNOVA! +' + formatNumber(gain) + ' 🌠 Núcleos');
   }
 
   function onFlorecer() {
@@ -503,6 +589,7 @@ const UI = (() => {
     el.tabUpg.addEventListener('click', () => setTab('upg'));
     el.tabFlo.addEventListener('click', () => setTab('flo'));
     el.btnFlorecer.addEventListener('click', onFlorecer);
+    el.btnSupernova.addEventListener('click', onSupernova);
 
     el.btnTrophy.addEventListener('click', openAchievements);
     el.achvClose.addEventListener('click', closeAchievements);
