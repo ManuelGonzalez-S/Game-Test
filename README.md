@@ -1,45 +1,32 @@
-# 🌱 Jardín Cósmico
+# 🪙 Coin Rush
 
-Juego **idle/interactivo** web. Das vida a un planeta muerto liberando *Esporas*
-al tocarlo, cultivas formas de vida que producen solas, y haces crecer tu mundo.
+Juego **2D idle/automación**. Un generador suelta **monedas** que recorren un
+camino pasando por **estaciones** que las potencian (multiplican, suben de tier,
+apuestan, dividen) hasta caer en el **cofre** y sumar a tu dinero.
 
-Mobile-first (prioridad móvil), también funciona en portátil. Sin instalación:
-solo abrir en el navegador.
+Mobile-first. Sin instalación: solo abrir en el navegador.
 
 ## ▶️ Cómo jugar
-
-Abre `index.html` en cualquier navegador (móvil o escritorio). O sírvelo:
-
-```bash
-python3 -m http.server 8000
-# abre http://localhost:8000
-```
-
-- **Toca el planeta** para liberar Esporas.
-- Gasta Esporas en **Formas de Vida** (Musgo, Líquenes, Hongos...) para producir
-  esporas automáticamente.
-- El juego **autoguarda** y calcula el progreso mientras estás fuera.
+- Las monedas fluyen solas por el recorrido y caen en el cofre 🧰.
+- Gasta dinero en **subir el nivel del tablero** (más cadencia y valor).
+- Toca una **estación** para cambiarla (1–2 veces por tier, con coste).
+- Llena la **meta del tier** y pulsa **Ascender**: nuevo recorrido + **💎 diamantes**.
+- Gasta 💎 en el **Árbol de Habilidades** (mejoras permanentes).
 
 ## 🧱 Stack
-
-HTML + CSS + JavaScript vanilla + `localStorage`. Sin build step.
+HTML + CSS + JavaScript vanilla + Canvas 2D + `localStorage`. Sin build.
 
 ```
-index.html
-css/style.css
-js/  format.js · data.js · state.js · engine.js · ui.js · main.js
-docs/GAME_DESIGN.md   <- diseño completo y roadmap por fases
+index.html · css/style.css · manifest.webmanifest · vercel.json
+js/  format · data · state · route · engine · render · ui · main
+docs/GAME_DESIGN.md
+archive/jardin-cosmico/   (juego anterior, jugable)
 ```
 
-## 🗺️ Estado
+## 🚀 Despliegue
+Sitio estático. `vercel.json` para desplegar en Vercel sin framework (Preset = *Other*).
+También sirve con `python3 -m http.server`.
 
-- ✅ **Fase 1 (MVP):** recurso, planeta tocable, producción pasiva, autoguardado, offline.
-- ✅ **Fase 3 (bloom/juicy):** eras del planeta, partículas, sonido, celebraciones.
-- ✅ **Fase 2 (progresión):** 10 generadores, milestones automáticos, mejoras y pestañas.
-- ✅ **Fase 4 (prestigio):** Florecer → Semillas Estelares.
-- ✅ **Fase 5 (retención):** 14 logros, modal, icono de sonido SVG.
-- ✅ **Árbol de Semillas:** 22 nodos en 5 ramas, comprados con semillas (permanentes).
-- ✅ **Balanceo afinado:** curva de semillas, sinergias y head-start (ver `docs/`).
-- ⏭️ Pendiente futuro: tema claro/oscuro, más contenido endgame.
-
-Ver [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md) para el diseño y roadmap completos.
+---
+> El juego anterior, **Jardín Cósmico**, está archivado y jugable en
+> [`archive/jardin-cosmico/`](archive/jardin-cosmico/).

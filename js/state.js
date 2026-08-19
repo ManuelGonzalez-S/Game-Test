@@ -1,65 +1,48 @@
-// state.js — estado del juego + guardado/carga + progreso offline.
+// state.js — estado del juego, guardado/carga, export/import y progreso offline.
 
-const SAVE_KEY = 'jardin-cosmico-save-v1';
+const SAVE_KEY = 'coin-rush-save-v1';
 
-// Estado por defecto (partida nueva).
 function defaultState() {
-  const generators = {};
-  for (const g of GAME_DATA.generators) generators[g.id] = 0;
   return {
-    spores: 0,          // esporas actuales
-    totalSpores: 0,     // esporas producidas en total (para bloom/hitos)
-    totalClicks: 0,     // toques totales
-    generators,         // id -> cantidad
-    upgrades: {},       // id -> true (mejoras compradas)
-    seeds: 0,           // Semillas Estelares disponibles (se gastan en el árbol)
-    totalSeeds: 0,      // semillas ganadas en total (para logros)
-    tree: {},           // id de nodo -> true (nodos del árbol comprados)
-    floradas: 0,        // nº de veces que has florecido
-    nucleos: 0,         // Núcleos Estelares (2º prestigio, permanentes)
-    seedsSinceSupernova: 0, // semillas ganadas desde la última Supernova
-    supernovas: 0,      // nº de supernovas realizadas
-    achievements: {},   // id -> true (logros desbloqueados)
+    money: 0,
+    diamonds: 0,
+    tier: 1,
+    boardLevel: 0,
+    bankedThisTier: 0,   // dinero banqueado en este tier (meta de ascenso)
+    totalBanked: 0,      // total histórico
+    swapsUsed: 0,        // cambios de estación usados este tier
+    route: null,         // { tier, slots: [tipo|null, ...] } (geometría se recalcula)
+    skills: {},          // id -> true
+    rate: 0,             // EMA de dinero/seg (para offline)
     lastSeen: Date.now(),
-    soundEnabled: true, // sonido activado por defecto (arranca tras 1er toque)
+    soundEnabled: true,
     version: 1,
   };
 }
 
 let state = defaultState();
 
+function normalizeState() {
+  const d = defaultState();
+  for (const k in d) if (!(k in state)) state[k] = d[k];
+  if (!state.skills || typeof state.skills !== 'object') state.skills = {};
+  return state;
+}
+
 function saveGame() {
   try {
     state.lastSeen = Date.now();
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
     return true;
-  } catch (e) {
-    console.warn('No se pudo guardar:', e);
-    return false;
-  }
+  } catch (e) { console.warn('No se pudo guardar:', e); return false; }
 }
 
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    // Fusiona con el estado por defecto por si añadimos campos nuevos.
-    state = Object.assign(defaultState(), parsed);
-    // Asegura que todos los generadores existen (por si añadimos nuevos).
-    for (const g of GAME_DATA.generators) {
-      if (typeof state.generators[g.id] !== 'number') state.generators[g.id] = 0;
-    }
-    if (!state.upgrades || typeof state.upgrades !== 'object') state.upgrades = {};
-    if (!state.achievements || typeof state.achievements !== 'object') state.achievements = {};
-    if (!state.tree || typeof state.tree !== 'object') state.tree = {};
-    if (typeof state.seeds !== 'number') state.seeds = 0;
-    if (typeof state.totalSeeds !== 'number') state.totalSeeds = state.seeds || 0;
-    if (typeof state.floradas !== 'number') state.floradas = 0;
-    if (typeof state.nucleos !== 'number') state.nucleos = 0;
-    if (typeof state.supernovas !== 'number') state.supernovas = 0;
-    // Da crédito a las semillas ya ganadas para la primera Supernova.
-    if (typeof state.seedsSinceSupernova !== 'number') state.seedsSinceSupernova = state.totalSeeds || 0;
+    state = Object.assign(defaultState(), JSON.parse(raw));
+    normalizeState();
     return true;
   } catch (e) {
     console.warn('Guardado corrupto, empezando de cero:', e);
@@ -68,57 +51,44 @@ function loadGame() {
   }
 }
 
-function resetGame() {
-  state = defaultState();
-  saveGame();
-}
+function resetGame() { state = defaultState(); saveGame(); }
 
-// ---- Copia de seguridad (export / import) ----
-// Devuelve un código en base64 con la partida (para copiar/pegar).
+// ---- Copia de seguridad ----
 function exportSave() {
   saveGame();
-  const raw = localStorage.getItem(SAVE_KEY) || JSON.stringify(state);
-  return btoa(unescape(encodeURIComponent(raw)));
+  return btoa(unescape(encodeURIComponent(localStorage.getItem(SAVE_KEY) || JSON.stringify(state))));
 }
-// Restaura la partida desde un código. Devuelve true si es válido.
 function importSave(code) {
   try {
     const raw = decodeURIComponent(escape(atob((code || '').trim())));
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || !parsed.generators) return false;
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.money !== 'number') return false;
     localStorage.setItem(SAVE_KEY, raw);
     loadGame();
     saveGame();
     return true;
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 }
 
-// Calcula y aplica el progreso offline. Devuelve { gained, seconds }.
+// ---- Progreso offline (aproximado por la tasa reciente) ----
 function applyOfflineProgress() {
   const now = Date.now();
-  const elapsedSec = Math.max(0, (now - (state.lastSeen || now)) / 1000);
-  if (elapsedSec < 1) return { gained: 0, seconds: 0 };
-
-  const capped = Math.min(elapsedSec, effectiveOfflineCap());
-  const perSec = passiveProduction();
-  const gained = perSec * capped * effectiveOfflineRate();
-
+  const sec = Math.max(0, (now - (state.lastSeen || now)) / 1000);
+  if (sec < 5 || !state.skills.off || state.rate <= 0) return { gained: 0, seconds: sec };
+  const capped = Math.min(sec, 8 * 3600);
+  const gained = state.rate * capped * 0.5;
   if (gained > 0) {
-    state.spores += gained;
-    state.totalSpores += gained;
+    state.money += gained;
+    state.bankedThisTier += gained;
+    state.totalBanked += gained;
   }
-  return { gained, seconds: elapsedSec };
+  return { gained, seconds: sec };
 }
 
-// Formatea una duración en segundos como "2h 15m", "45m", "30s".
 function formatDuration(sec) {
   sec = Math.floor(sec);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
   if (h > 0) return h + 'h ' + m + 'm';
   if (m > 0) return m + 'm';
-  return s + 's';
+  return sec + 's';
 }
