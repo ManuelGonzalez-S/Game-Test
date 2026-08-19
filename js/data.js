@@ -21,7 +21,8 @@ const GAME = {
   // Física (vista lateral)
   physics: {
     gravity: 1600,       // px/seg² de caída
-    beltSpeed: 170,      // px/seg que arrastra la cinta
+    beltSpeed: 70,       // px/seg base (LENTA al principio; mejora con nivel/habilidades)
+    beltSpeedPerLevel: 0.09, // +9% de velocidad por nivel de tablero
     coinR: 15,           // radio de la moneda
   },
 
@@ -38,10 +39,10 @@ const GAME = {
 
   // Estaciones
   stations: {
-    mult:   { id: 'mult',   emoji: '💰', name: 'Multiplicador', color: '#ffd54a' },
-    forge:  { id: 'forge',  emoji: '⚒️', name: 'Forja',         color: '#ff9d5c' },
-    casino: { id: 'casino', emoji: '🎰', name: 'Casino',        color: '#ff6b8a' },
-    split:  { id: 'split',  emoji: '🔀', name: 'Bifurcación',   color: '#7cc4ff' },
+    mult:   { id: 'mult',   ico: 'chevrons-up', name: 'Multiplicador', color: '#ffc64b' },
+    forge:  { id: 'forge',  ico: 'hammer',      name: 'Forja',         color: '#ff8a4c' },
+    casino: { id: 'casino', ico: 'dices',       name: 'Casino',        color: '#ff5c8a' },
+    split:  { id: 'split',  ico: 'split',       name: 'Bifurcación',   color: '#5cc8ff' },
   },
   // Poderes base (modificados por habilidades)
   power: {
@@ -64,22 +65,22 @@ const GAME = {
   // Árbol de habilidades (se paga con 💎). req = nodo previo.
   skills: [
     // Producción
-    { id: 'val1', branch: 'Producción', emoji: '💵', name: 'Acuñación I',  cost: 1,  req: null,   baseValueMult: 2,  desc: '×2 al valor base de las monedas.' },
-    { id: 'val2', branch: 'Producción', emoji: '💵', name: 'Acuñación II', cost: 4,  req: 'val1', baseValueMult: 3,  desc: '×3 al valor base de las monedas.' },
-    { id: 'spd1', branch: 'Producción', emoji: '⏩', name: 'Cinta rápida I', cost: 2, req: null,  spawnMult: 1.4, desc: 'El generador suelta monedas un 40% más rápido.' },
-    { id: 'spd2', branch: 'Producción', emoji: '⏩', name: 'Cinta rápida II', cost: 6, req: 'spd1', spawnMult: 1.5, desc: 'Otro 50% más rápido.' },
-    { id: 'flow', branch: 'Producción', emoji: '💨', name: 'Flujo veloz',  cost: 5,  req: null,   speedMult: 1.6, desc: 'Las monedas viajan un 60% más rápido.' },
+    { id: 'val1', branch: 'Producción', ico: 'circle-dollar-sign', name: 'Acuñación I',  cost: 1,  req: null,   baseValueMult: 2,  desc: '×2 al valor base de las monedas.' },
+    { id: 'val2', branch: 'Producción', ico: 'circle-dollar-sign', name: 'Acuñación II', cost: 4,  req: 'val1', baseValueMult: 3,  desc: '×3 al valor base de las monedas.' },
+    { id: 'spd1', branch: 'Producción', ico: 'zap', name: 'Cadencia I',  cost: 2, req: null,  spawnMult: 1.4, desc: 'El generador suelta monedas un 40% más rápido.' },
+    { id: 'spd2', branch: 'Producción', ico: 'zap', name: 'Cadencia II', cost: 6, req: 'spd1', spawnMult: 1.5, desc: 'Otro 50% más rápido.' },
+    { id: 'flow', branch: 'Producción', ico: 'wind', name: 'Cinta veloz', cost: 5, req: null, speedMult: 1.6, desc: 'Las cintas van un 60% más rápido.' },
     // Estaciones
-    { id: 'pmul', branch: 'Estaciones', emoji: '💰', name: 'Prensa pesada', cost: 3, req: null,  multBonus: 1,   desc: 'Multiplicador: +1 al factor (×2 → ×3).' },
-    { id: 'pfor', branch: 'Estaciones', emoji: '⚒️', name: 'Fuelle',        cost: 4, req: null,  forgeBonus: 0.15, desc: 'Forja: +15% de probabilidad de subir tier.' },
-    { id: 'pcas', branch: 'Estaciones', emoji: '🎰', name: 'Dados cargados',cost: 6, req: null,  casinoWinBonus: 0.15, desc: 'Casino: +15% de probabilidad de ganar.' },
-    { id: 'pspl', branch: 'Estaciones', emoji: '🔀', name: 'Doble molde',   cost: 6, req: null,  splitBonus: 0.15, desc: 'Bifurcación: cada mitad vale +15%.' },
+    { id: 'pmul', branch: 'Estaciones', ico: 'chevrons-up', name: 'Prensa pesada', cost: 3, req: null,  multBonus: 1,   desc: 'Multiplicador: +1 al factor (×2 → ×3).' },
+    { id: 'pfor', branch: 'Estaciones', ico: 'hammer', name: 'Fuelle',        cost: 4, req: null,  forgeBonus: 0.15, desc: 'Forja: +15% de probabilidad de subir tier.' },
+    { id: 'pcas', branch: 'Estaciones', ico: 'dices', name: 'Dados cargados',cost: 6, req: null,  casinoWinBonus: 0.15, desc: 'Casino: +15% de probabilidad de ganar.' },
+    { id: 'pspl', branch: 'Estaciones', ico: 'split', name: 'Doble molde',   cost: 6, req: null,  splitBonus: 0.15, desc: 'Bifurcación: cada mitad vale +15%.' },
     // Meta
-    { id: 'swap1', branch: 'Meta', emoji: '🔧', name: 'Ingeniero',     cost: 5,  req: null,   swaps: 1, desc: '+1 cambio de estación por tier.' },
-    { id: 'swap2', branch: 'Meta', emoji: '🔧', name: 'Jefe de obra',  cost: 12, req: 'swap1', swaps: 1, desc: '+1 cambio de estación por tier.' },
-    { id: 'mint',  branch: 'Meta', emoji: '⭐', name: 'Lingotes',      cost: 8,  req: null,   startTier: 1, desc: 'Las monedas nacen un tier por encima.' },
-    { id: 'gem',   branch: 'Meta', emoji: '💎', name: 'Filón',         cost: 10, req: null,   diamondMult: 1.5, desc: '+50% de diamantes al ascender.' },
-    { id: 'off',   branch: 'Meta', emoji: '🌙', name: 'Turno de noche', cost: 6, req: null,   offline: true, desc: 'Ganas dinero mientras estás fuera (offline).' },
+    { id: 'swap1', branch: 'Meta', ico: 'wrench', name: 'Ingeniero',     cost: 5,  req: null,   swaps: 1, desc: '+1 cambio de estación por tier.' },
+    { id: 'swap2', branch: 'Meta', ico: 'wrench', name: 'Jefe de obra',  cost: 12, req: 'swap1', swaps: 1, desc: '+1 cambio de estación por tier.' },
+    { id: 'mint',  branch: 'Meta', ico: 'coins', name: 'Lingotes',      cost: 8,  req: null,   startTier: 1, desc: 'Las monedas nacen un tier por encima.' },
+    { id: 'gem',   branch: 'Meta', ico: 'gem', name: 'Filón',         cost: 10, req: null,   diamondMult: 1.5, desc: '+50% de diamantes al ascender.' },
+    { id: 'off',   branch: 'Meta', ico: 'moon', name: 'Turno de noche', cost: 6, req: null,   offline: true, desc: 'Ganas dinero mientras estás fuera (offline).' },
   ],
 };
 
