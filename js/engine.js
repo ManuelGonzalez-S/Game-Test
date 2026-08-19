@@ -20,7 +20,7 @@ function baseCoinValue() {
 function spawnIntervalMs() {
   return GAME.baseSpawnMs / (skillProduct('spawnMult') * (1 + 0.03 * state.boardLevel));
 }
-function coinSpeed() { return GAME.coinSpeed * skillProduct('speedMult'); }
+function beltSpeedNow() { return GAME.physics.beltSpeed * skillProduct('speedMult'); }
 function spawnTier() { return GAME.spawnTierForTier(state.tier) + skillAdd('startTier'); }
 function multPower() { return GAME.power.mult + skillAdd('multBonus'); }
 function forgeChance() { return GAME.power.forgeChance + skillAdd('forgeBonus'); }
@@ -35,12 +35,13 @@ let _spawnAcc = 0;
 let _rateAcc = 0, _rateTime = 0;
 const bankEvents = []; // {x,y,value,tier} consumidos por el render
 
-function spawnCoin(geo) {
+function spawnCoin(m) {
   const tier = Math.max(0, Math.min(GAME.coinTiers.length - 1, spawnTier()));
   coins.push({
-    id: _coinId++, s: 0, tier,
+    id: _coinId++, x: m.hopper.x + (Math.random() - 0.5) * 6, y: m.hopper.y,
+    vx: 0, vy: 40, tier, belt: null,
     value: baseCoinValue() * coinTierValue(tier),
-    applied: new Array(geo.stations.length).fill(false),
+    applied: new Array(m.stations.length).fill(false),
   });
 }
 
@@ -63,7 +64,8 @@ function applyStation(coin, st) {
     case 'split': {
       coin.value *= splitFactor();
       coins.push({
-        id: _coinId++, s: coin.s, tier: coin.tier,
+        id: _coinId++, x: coin.x, y: coin.y - 4,
+        vx: -coin.__dir * 60, vy: -120, tier: coin.tier, belt: null,
         value: coin.value, applied: coin.applied.slice(),
       });
       break;
@@ -76,34 +78,68 @@ function bankCoin(c) {
   state.bankedThisTier += c.value;
   state.totalBanked += c.value;
   _rateAcc += c.value;
-  const geo = Route.get();
-  bankEvents.push({ x: geo.vault.x, y: geo.vault.y, value: c.value, tier: c.tier });
+  bankEvents.push({ x: c.x, y: c.y, value: c.value, tier: c.tier });
 }
 
 function step(dt) {
-  const geo = Route.get();
-  if (!geo) return;
+  const m = Route.get();
+  if (!m) return;
+  const R = GAME.physics.coinR;
+  const G = GAME.physics.gravity;
+  const belt = beltSpeedNow();
 
   // Spawns
   _spawnAcc += dt * 1000;
   const interval = spawnIntervalMs();
   let guard = 0;
-  while (_spawnAcc >= interval && guard < 20) { _spawnAcc -= interval; spawnCoin(geo); guard++; }
+  while (_spawnAcc >= interval && guard < 20) { _spawnAcc -= interval; spawnCoin(m); guard++; }
   if (_spawnAcc > interval * 3) _spawnAcc = 0;
 
-  // Avance de monedas
-  const speed = coinSpeed();
   for (let i = coins.length - 1; i >= 0; i--) {
     const c = coins[i];
-    c.s += speed * dt;
-    for (const st of geo.stations) {
-      if (!c.applied[st.index] && c.s >= st.s) {
-        c.applied[st.index] = true;
-        applyStation(c, st);
+
+    if (c.belt !== null) {
+      // Sobre una cinta: arrastrada a velocidad constante.
+      const b = m.belts[c.belt];
+      c.__dir = b.dir;
+      c.y = b.y - R;
+      c.x += b.dir * belt * dt;
+      // Estación de esta cinta.
+      for (const st of m.stations) {
+        if (st.belt === c.belt && !c.applied[st.index]) {
+          if ((b.dir > 0 && c.x >= st.x) || (b.dir < 0 && c.x <= st.x)) {
+            c.applied[st.index] = true;
+            applyStation(c, st);
+          }
+        }
+      }
+      // ¿Se cae por el extremo? Baja recto para aterrizar en la cinta de abajo.
+      if ((b.dir > 0 && c.x > b.x2) || (b.dir < 0 && c.x < b.x1)) {
+        c.belt = null; c.vy = 20; c.vx = 0;
+      }
+    } else {
+      // En el aire: gravedad.
+      const prevY = c.y;
+      c.vy += G * dt;
+      c.y += c.vy * dt;
+      c.x += c.vx * dt;
+      c.vx *= 0.985;
+      // Aterrizaje sobre la primera cinta que cruza cayendo.
+      if (c.vy > 0) {
+        for (let bi = 0; bi < m.belts.length; bi++) {
+          const b = m.belts[bi];
+          const surf = b.y - R;
+          if (prevY <= surf && c.y >= surf && c.x >= b.x1 - 4 && c.x <= b.x2 + 4) {
+            c.belt = bi; c.y = surf; c.vy = 0; c.vx = 0;
+            break;
+          }
+        }
       }
     }
+
     if (c.dead) { coins.splice(i, 1); continue; }
-    if (c.s >= geo.total) { bankCoin(c); coins.splice(i, 1); }
+    if (c.y >= m.vaultY) { bankCoin(c); coins.splice(i, 1); continue; }
+    if (c.x < -40 || c.x > m.W + 40) { coins.splice(i, 1); } // seguridad
   }
 
   // Tasa (para offline) — EMA cada segundo
