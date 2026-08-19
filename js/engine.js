@@ -20,7 +20,11 @@ function baseCoinValue() {
 function spawnIntervalMs() {
   return GAME.baseSpawnMs / (skillProduct('spawnMult') * (1 + 0.03 * state.boardLevel));
 }
-function beltSpeedNow() { return GAME.physics.beltSpeed * skillProduct('speedMult'); }
+function beltSpeedNow() {
+  return GAME.physics.beltSpeed
+    * (1 + GAME.physics.beltSpeedPerLevel * state.boardLevel)
+    * skillProduct('speedMult');
+}
 function spawnTier() { return GAME.spawnTierForTier(state.tier) + skillAdd('startTier'); }
 function multPower() { return GAME.power.mult + skillAdd('multBonus'); }
 function forgeChance() { return GAME.power.forgeChance + skillAdd('forgeBonus'); }

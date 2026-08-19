@@ -44,9 +44,9 @@ const UI = (() => {
   // ---- HUD ----
   function renderHud() {
     el.money.textContent = formatNumber(state.money);
-    el.rate.textContent = formatNumber(state.rate) + ' /s';
+    el.rate.textContent = formatNumber(state.rate) + '/s';
     el.tierLabel.textContent = 'Tier ' + state.tier;
-    el.diamonds.textContent = '💎 ' + formatNumber(state.diamonds);
+    el.diamonds.textContent = formatNumber(state.diamonds);
 
     const goal = tierGoal();
     el.tierFill.style.width = (tierProgress() * 100).toFixed(1) + '%';
@@ -94,12 +94,12 @@ const UI = (() => {
     for (const key of ['mult', 'forge', 'casino', 'split']) {
       const def = GAME.stations[key];
       const opt = document.createElement('button');
-      opt.className = 'swap-opt' + (key === current ? ' current' : '');
+      opt.className = 'opt' + (key === current ? ' current' : '');
       opt.innerHTML = `
-        <span class="swap-emoji">${def.emoji}</span>
-        <span class="tn-info">
-          <span class="swap-name">${def.name}${key === current ? ' (actual)' : ''}</span>
-          <span class="swap-desc">${stationDesc(key)}</span>
+        <span class="opt-badge" style="color:${def.color}">${Icons.markup(def.ico, { size: 22, stroke: def.color })}</span>
+        <span class="opt-info">
+          <span class="opt-name">${def.name}${key === current ? ' · actual' : ''}</span>
+          <span class="opt-desc">${stationDesc(key)}</span>
         </span>`;
       const affordable = left > 0 && state.money >= cost && key !== current;
       opt.disabled = !affordable;
@@ -137,16 +137,16 @@ const UI = (() => {
     for (const b of order) {
       const h = document.createElement('div');
       h.className = 'tree-branch';
-      h.textContent = (BRANCH_EMOJI[b] || '') + ' ' + b;
+      h.textContent = b;
       el.skillsList.appendChild(h);
       for (const n of byBranch[b]) {
         const card = document.createElement('button');
-        card.className = 'tree-node';
+        card.className = 'node';
         card.innerHTML = `
-          <span class="tn-emoji">${n.emoji}</span>
-          <span class="tn-info"><span class="tn-name">${n.name}</span>
-            <span class="tn-desc">${n.desc}</span></span>
-          <span class="tn-cost"></span>`;
+          <span class="node-badge">${Icons.markup(n.ico, { size: 20 })}</span>
+          <span class="node-info"><span class="node-name">${n.name}</span>
+            <span class="node-desc">${n.desc}</span></span>
+          <span class="node-cost"></span>`;
         card.addEventListener('click', () => {
           if (buySkill(n.id)) {
             if (typeof Sound !== 'undefined') Sound.buy();
@@ -160,7 +160,8 @@ const UI = (() => {
     }
   }
   function renderSkills() {
-    el.skillsDiamonds.textContent = '💎 ' + formatNumber(state.diamonds);
+    el.skillsDiamonds.innerHTML = Icons.markup('gem', { size: 14, stroke: '#5cc8ff' }) +
+      ' ' + formatNumber(state.diamonds);
     for (const n of GAME.skills) {
       const card = _skillNodes[n.id];
       if (!card) continue;
@@ -169,8 +170,10 @@ const UI = (() => {
       card.classList.toggle('available', st === 'available');
       card.classList.toggle('locked', st === 'locked');
       card.classList.toggle('expensive', st === 'expensive');
-      card.querySelector('.tn-cost').textContent =
-        st === 'owned' ? '✓' : st === 'locked' ? '🔒' : n.cost + ' 💎';
+      const costEl = card.querySelector('.node-cost');
+      if (st === 'owned') costEl.textContent = '✓';
+      else if (st === 'locked') costEl.textContent = '';
+      else costEl.innerHTML = n.cost + ' ' + Icons.markup('gem', { size: 13, stroke: '#5cc8ff' });
       card.disabled = st !== 'available';
     }
   }
@@ -244,6 +247,7 @@ const UI = (() => {
 
   function init() {
     cache();
+    Icons.inject();          // rellena los <i data-ico> estáticos
     Render.init(el.board);
     buildSkills();
     bind();
