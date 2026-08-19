@@ -13,17 +13,31 @@ function skillAdd(field) {
   return a;
 }
 
+// ---- Mejoras por partes (tracks) ----
+function trackLevel(id) { return (state.tracks && state.tracks[id]) || 0; }
+function trackFactor(id) { return 1 + trackDef(id).per * trackLevel(id); }
+function trackCost(id) {
+  const t = trackDef(id);
+  return Math.ceil(t.base * Math.pow(t.growth, trackLevel(id)));
+}
+function canBuyTrack(id) { return state.money >= trackCost(id); }
+function buyTrack(id) {
+  const c = trackCost(id);
+  if (state.money < c) return false;
+  state.money -= c;
+  state.tracks[id] = trackLevel(id) + 1;
+  return true;
+}
+
 // ---- Valores derivados ----
 function baseCoinValue() {
-  return GAME.baseCoinValue * skillProduct('baseValueMult') * (1 + 0.2 * state.boardLevel);
+  return GAME.baseCoinValue * skillProduct('baseValueMult') * trackFactor('value');
 }
 function spawnIntervalMs() {
-  return GAME.baseSpawnMs / (skillProduct('spawnMult') * (1 + 0.03 * state.boardLevel));
+  return GAME.baseSpawnMs / (skillProduct('spawnMult') * trackFactor('cadence'));
 }
 function beltSpeedNow() {
-  return GAME.physics.beltSpeed
-    * (1 + GAME.physics.beltSpeedPerLevel * state.boardLevel)
-    * skillProduct('speedMult');
+  return GAME.physics.beltSpeed * skillProduct('speedMult') * trackFactor('speed');
 }
 function spawnTier() { return GAME.spawnTierForTier(state.tier) + skillAdd('startTier'); }
 function multPower() { return GAME.power.mult + skillAdd('multBonus'); }
@@ -133,7 +147,8 @@ function step(dt) {
         for (let bi = 0; bi < m.belts.length; bi++) {
           const b = m.belts[bi];
           const surf = b.y - R;
-          if (prevY <= surf && c.y >= surf && c.x >= b.x1 - 4 && c.x <= b.x2 + 4) {
+          // Estricto (<): no re-aterriza en la cinta que acaba de abandonar.
+          if (prevY < surf && c.y >= surf && c.x >= b.x1 - 4 && c.x <= b.x2 + 4) {
             c.belt = bi; c.y = surf; c.vy = 0; c.vx = 0;
             break;
           }
@@ -157,16 +172,6 @@ function step(dt) {
 
 function getCoins() { return coins; }
 function clearCoins() { coins = []; _spawnAcc = 0; }
-
-// ---- Nivel de tablero ----
-function boardCost() { return boardLevelCost(state.boardLevel); }
-function canBuyBoard() { return state.money >= boardCost(); }
-function buyBoardLevel() {
-  const cost = boardCost();
-  if (state.money < cost) return false;
-  state.money -= cost; state.boardLevel++;
-  return true;
-}
 
 // ---- Ascender de tier ----
 function tierGoal() { return GAME.tierGoal(state.tier); }
