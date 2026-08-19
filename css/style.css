@@ -171,6 +171,29 @@ body {
   50% { box-shadow: 0 0 22px rgba(255,198,75,0.4); }
 }
 
+/* Mejoras por partes */
+.tracks-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.track {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 11px 6px 9px; border-radius: var(--r-md);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  cursor: pointer; transition: transform 0.08s, background 0.2s, border-color 0.2s;
+}
+.track:active { transform: translateY(1px) scale(0.99); }
+.track-ico { height: 22px; display: flex; align-items: center; }
+.track-name { font-size: 0.82rem; font-weight: 700; }
+.track-lvl { font-size: 0.72rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.track-cost {
+  font-size: 0.82rem; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; gap: 3px;
+}
+.track-cost::after { content: '💰'; font-size: 0.72rem; }
+.track.affordable { border-color: rgba(255,198,75,0.5); background: rgba(255,198,75,0.09); }
+.track.shake { animation: shake 0.3s ease; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+.btn-ascend.wide { width: 100%; justify-content: center; }
+
 .tools { display: flex; gap: 8px; }
 .tool-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;

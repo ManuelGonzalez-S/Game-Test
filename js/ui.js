@@ -4,6 +4,7 @@ const UI = (() => {
   const el = {};
   let _swapIndex = -1;
   let _skillNodes = {};
+  let _trackNodes = {};
   const BRANCH_EMOJI = { 'Producción': '🏭', 'Estaciones': '⚙️', 'Meta': '💎' };
 
   function cache() {
@@ -14,9 +15,7 @@ const UI = (() => {
     el.board = document.getElementById('board');
     el.tierFill = document.getElementById('tier-fill');
     el.tierText = document.getElementById('tier-text');
-    el.btnBoard = document.getElementById('btn-board');
-    el.boardLvl = document.getElementById('board-lvl');
-    el.boardCost = document.getElementById('board-cost');
+    el.tracks = document.getElementById('tracks');
     el.btnAscend = document.getElementById('btn-ascend');
     el.ascendInfo = document.getElementById('ascend-info');
     el.btnSkills = document.getElementById('btn-skills');
@@ -52,9 +51,7 @@ const UI = (() => {
     el.tierFill.style.width = (tierProgress() * 100).toFixed(1) + '%';
     el.tierText.textContent = formatNumber(state.bankedThisTier) + ' / ' + formatNumber(goal);
 
-    el.boardLvl.textContent = 'Nv.' + state.boardLevel;
-    el.boardCost.textContent = formatNumber(boardCost()) + ' 💰';
-    el.btnBoard.classList.toggle('affordable', canBuyBoard());
+    renderTracks();
 
     const can = canAscend();
     el.btnAscend.disabled = !can;
@@ -64,6 +61,36 @@ const UI = (() => {
       el.ascendInfo.textContent = '+' + g + ' 💎 · nuevo recorrido';
     } else {
       el.ascendInfo.textContent = 'Llena la meta del tier';
+    }
+  }
+
+  // ---- Mejoras por partes ----
+  function buildTracks() {
+    el.tracks.innerHTML = '';
+    _trackNodes = {};
+    for (const t of GAME.tracks) {
+      const b = document.createElement('button');
+      b.className = 'track';
+      b.innerHTML = `
+        <span class="track-ico" style="color:${t.color}">${Icons.markup(t.ico, { size: 20, stroke: t.color })}</span>
+        <span class="track-name">${t.name}</span>
+        <span class="track-lvl"></span>
+        <span class="track-cost"></span>`;
+      b.addEventListener('click', () => {
+        if (buyTrack(t.id)) { if (typeof Sound !== 'undefined') Sound.buy(); renderHud(); saveGame(); }
+        else { b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); }
+      });
+      el.tracks.appendChild(b);
+      _trackNodes[t.id] = b;
+    }
+  }
+  function renderTracks() {
+    for (const t of GAME.tracks) {
+      const b = _trackNodes[t.id];
+      if (!b) continue;
+      b.querySelector('.track-lvl').textContent = 'Nv.' + trackLevel(t.id);
+      b.querySelector('.track-cost').textContent = formatNumber(trackCost(t.id));
+      b.classList.toggle('affordable', canBuyTrack(t.id));
     }
   }
 
@@ -200,10 +227,6 @@ const UI = (() => {
   }
 
   // ---- Acciones ----
-  function onBoardLevel() {
-    if (buyBoardLevel()) { if (typeof Sound !== 'undefined') Sound.buy(); renderHud(); saveGame(); }
-    else { el.btnBoard.classList.remove('shake'); void el.btnBoard.offsetWidth; }
-  }
   function onAscend() {
     if (!canAscend()) return;
     const gain = ascend();
@@ -230,7 +253,6 @@ const UI = (() => {
   function bind() {
     el.board.addEventListener('pointerdown', onBoardTap);
     el.board.addEventListener('contextmenu', e => e.preventDefault());
-    el.btnBoard.addEventListener('click', onBoardLevel);
     el.btnAscend.addEventListener('click', onAscend);
     el.btnReset.addEventListener('click', onReset);
     el.btnSkills.addEventListener('click', openSkills);
@@ -249,6 +271,7 @@ const UI = (() => {
     cache();
     Icons.inject();          // rellena los <i data-ico> estáticos
     Render.init(el.board);
+    buildTracks();
     buildSkills();
     bind();
     renderHud();

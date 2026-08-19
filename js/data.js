@@ -26,9 +26,15 @@ const GAME = {
     coinR: 15,           // radio de la moneda
   },
 
-  // Nivel de tablero
-  boardLevelBaseCost: 25,
-  boardLevelCostGrowth: 1.18,
+  // Mejoras por partes (se compran con dinero, por niveles independientes)
+  tracks: [
+    { id: 'value',   ico: 'coins', name: 'Valor',     color: '#ffc64b', base: 25, growth: 1.18, per: 0.25,
+      desc: '+25% al valor base de las monedas por nivel.' },
+    { id: 'cadence', ico: 'zap',   name: 'Cadencia',  color: '#5cc8ff', base: 40, growth: 1.19, per: 0.07,
+      desc: 'El generador suelta monedas más a menudo.' },
+    { id: 'speed',   ico: 'wind',  name: 'Velocidad', color: '#35e0a1', base: 30, growth: 1.20, per: 0.10,
+      desc: 'Las cintas transportan más rápido.' },
+  ],
 
   // Tiers de tablero
   slotsForTier: (t) => Math.min(3 + t, 9),          // nº de estaciones por recorrido
@@ -87,6 +93,4 @@ const GAME = {
 function coinTierValue(tier) {
   return Math.pow(GAME.coinTierRatio, tier);
 }
-function boardLevelCost(level) {
-  return Math.ceil(GAME.boardLevelBaseCost * Math.pow(GAME.boardLevelCostGrowth, level));
-}
+function trackDef(id) { return GAME.tracks.find(t => t.id === id); }
