@@ -15,9 +15,15 @@ const GAME = {
   coinTierRatio: 10,     // valor ×10 por cada tier de moneda
 
   // Generador
-  baseSpawnMs: 1400,     // intervalo base entre monedas (mejora con nivel/habilidades)
+  baseSpawnMs: 1050,     // intervalo base entre monedas (mejora con nivel/habilidades)
   baseCoinValue: 1,      // valor base de una moneda bronce (× multiplicadores)
-  coinSpeed: 150,        // px/seg de recorrido base
+
+  // Física (vista lateral)
+  physics: {
+    gravity: 1600,       // px/seg² de caída
+    beltSpeed: 170,      // px/seg que arrastra la cinta
+    coinR: 15,           // radio de la moneda
+  },
 
   // Nivel de tablero
   boardLevelBaseCost: 25,
