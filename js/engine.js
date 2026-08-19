@@ -133,7 +133,8 @@ function step(dt) {
         for (let bi = 0; bi < m.belts.length; bi++) {
           const b = m.belts[bi];
           const surf = b.y - R;
-          if (prevY <= surf && c.y >= surf && c.x >= b.x1 - 4 && c.x <= b.x2 + 4) {
+          // Estricto (<): no re-aterriza en la cinta que acaba de abandonar.
+          if (prevY < surf && c.y >= surf && c.x >= b.x1 - 4 && c.x <= b.x2 + 4) {
             c.belt = bi; c.y = surf; c.vy = 0; c.vx = 0;
             break;
           }
