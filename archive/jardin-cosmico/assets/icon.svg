@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#1b2650"/>
+      <stop offset="60%" stop-color="#111935"/>
+      <stop offset="100%" stop-color="#0b1020"/>
+    </radialGradient>
+    <radialGradient id="planet" cx="38%" cy="32%" r="78%">
+      <stop offset="0%" stop-color="#8bf0ad"/>
+      <stop offset="55%" stop-color="#2f9e5e"/>
+      <stop offset="100%" stop-color="#124e29"/>
+    </radialGradient>
+    <radialGradient id="atmo" cx="50%" cy="50%" r="50%">
+      <stop offset="70%" stop-color="rgba(88,224,138,0)"/>
+      <stop offset="90%" stop-color="rgba(88,224,138,0.35)"/>
+      <stop offset="100%" stop-color="rgba(88,224,138,0)"/>
+    </radialGradient>
+    <clipPath id="clip"><circle cx="256" cy="256" r="150"/></clipPath>
+  </defs>
+
+  <!-- Fondo espacio -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- Estrellas -->
+  <g fill="#ffffff">
+    <circle cx="70" cy="80" r="2.5" opacity="0.9"/>
+    <circle cx="430" cy="110" r="2" opacity="0.8"/>
+    <circle cx="120" cy="420" r="2" opacity="0.7"/>
+    <circle cx="410" cy="400" r="2.5" opacity="0.85"/>
+    <circle cx="460" cy="250" r="1.6" opacity="0.7"/>
+    <circle cx="60" cy="260" r="1.6" opacity="0.6"/>
+  </g>
+
+  <!-- Atmósfera -->
+  <circle cx="256" cy="256" r="185" fill="url(#atmo)"/>
+
+  <!-- Planeta -->
+  <circle cx="256" cy="256" r="150" fill="url(#planet)"/>
+
+  <!-- Océanos / continentes -->
+  <g clip-path="url(#clip)">
+    <circle cx="256" cy="256" r="150" fill="#1f7fa8" opacity="0.55"/>
+    <path d="M150,210 q40,-34 84,-14 q40,20 20,60 q-24,44 -76,34 q-48,-12 -48,-46 q-2,-22 20,-34 z" fill="#3fbf6a"/>
+    <path d="M300,180 q34,-6 44,26 q10,32 -22,46 q-34,14 -52,-14 q-14,-26 8,-46 z" fill="#4fce78"/>
+    <path d="M210,300 q34,-24 70,-6 q30,18 12,52 q-22,36 -66,26 q-34,-10 -34,-42 q0,-18 18,-30 z" fill="#3fbf6a"/>
+    <circle cx="200" cy="230" r="9" fill="#bff58a"/>
+    <circle cx="320" cy="210" r="7" fill="#bff58a"/>
+    <circle cx="250" cy="320" r="8" fill="#bff58a"/>
+    <ellipse cx="210" cy="205" rx="60" ry="38" fill="#ffffff" opacity="0.14"/>
+  </g>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="6"/>
+
+  <!-- Destello -->
+  <g fill="#ffe9a8">
+    <path d="M388,150 l7,20 l20,7 l-20,7 l-7,20 l-7,-20 l-20,-7 l20,-7 z"/>
+  </g>
+</svg>
