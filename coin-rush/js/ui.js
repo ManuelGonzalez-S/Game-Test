@@ -21,6 +21,7 @@ const UI = (() => {
     el.btnSkills = document.getElementById('btn-skills');
     el.btnBackup = document.getElementById('btn-backup');
     el.btnReset = document.getElementById('btn-reset');
+    el.btnSound = document.getElementById('btn-sound');
     // swap modal
     el.swapModal = document.getElementById('swap-modal');
     el.swapClose = document.getElementById('swap-close');
@@ -231,9 +232,21 @@ const UI = (() => {
     if (!canAscend()) return;
     const gain = ascend();
     if (gain > 0) {
+      if (typeof Sound !== 'undefined') Sound.ascend();
       renderHud(); saveGame();
       toast('✨ ¡Tier ' + state.tier + '! +' + gain + ' 💎 · nuevo recorrido');
     }
+  }
+
+  function toggleSound() {
+    state.soundEnabled = !state.soundEnabled;
+    Sound.setEnabled(state.soundEnabled);
+    updateSoundBtn();
+    saveGame();
+  }
+  function updateSoundBtn() {
+    el.btnSound.innerHTML = Icons.markup(state.soundEnabled ? 'volume-2' : 'volume-x', { size: 18 });
+    el.btnSound.classList.toggle('on', state.soundEnabled);
   }
   function onReset() {
     if (confirm('¿Reiniciar TODO el progreso? No se puede deshacer.')) {
@@ -255,6 +268,7 @@ const UI = (() => {
     el.board.addEventListener('contextmenu', e => e.preventDefault());
     el.btnAscend.addEventListener('click', onAscend);
     el.btnReset.addEventListener('click', onReset);
+    el.btnSound.addEventListener('click', toggleSound);
     el.btnSkills.addEventListener('click', openSkills);
     el.skillsClose.addEventListener('click', closeSkills);
     el.skillsModal.addEventListener('click', e => { if (e.target === el.skillsModal) closeSkills(); });
@@ -274,6 +288,8 @@ const UI = (() => {
     buildTracks();
     buildSkills();
     bind();
+    if (typeof Sound !== 'undefined') Sound.setEnabled(state.soundEnabled);
+    updateSoundBtn();
     renderHud();
   }
 

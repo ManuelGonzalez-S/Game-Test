@@ -51,6 +51,7 @@ let _coinId = 0;
 let _spawnAcc = 0;
 let _rateAcc = 0, _rateTime = 0;
 const bankEvents = []; // {x,y,value,tier} consumidos por el render
+const moverEvents = []; // {x,y} barridos del empujador (sonido + partículas)
 
 let _time = 0;
 
@@ -148,7 +149,7 @@ function physicsStep(m, sdt, R, G, MAXV) {
       if (c.x >= sh.x1 && c.x <= sh.x2 && c.y > surf && c.y < sh.y + R) {
         c.y = surf;
         if (c.vy > 0) c.vy = -c.vy * 0.12; else if (c.vy > -6) c.vy = 0;
-        c.vx *= 0.86; // fricción
+        c.vx *= 0.82; // fricción (se apilan en montañas)
         applyMover(c, sh, sdt);
       }
     }
@@ -215,6 +216,15 @@ function step(dt) {
     if (c.dead) { coins.splice(i, 1); continue; }
     if (c.y > m.bankY) { bankCoin(c); coins.splice(i, 1); continue; }
     if (c.y > m.H + 160 || c.x < -80 || c.x > m.W + 80) coins.splice(i, 1);
+  }
+
+  // Detecta el inicio del barrido de cada empujador (para sonido/partículas).
+  const P = GAME.movers.pusher;
+  for (const sh of m.shelves) {
+    if (sh.mover !== 'pusher') continue;
+    const pushing = ((_time + sh.index * 0.4) % P.period) / P.period < 0.4;
+    if (pushing && !sh._wasPushing) moverEvents.push({ x: sh.closedX, y: sh.y, dir: sh.dir });
+    sh._wasPushing = pushing;
   }
 
   // Tasa (offline) — EMA cada segundo

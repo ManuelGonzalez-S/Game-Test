@@ -21,7 +21,10 @@
   <div id="app">
     <!-- Barra superior -->
     <header id="topbar">
-      <a class="hub-back" href="/">‹ Centro</a>
+      <div class="topnav">
+        <a class="hub-back" href="/">‹ Centro</a>
+        <button id="btn-sound" class="sound-btn" aria-label="Sonido"></button>
+      </div>
       <div class="money-card">
         <div class="money-label"><i class="ico" data-ico="coins" data-size="16"></i> Dinero</div>
         <div id="money" class="money">0</div>
@@ -101,6 +104,7 @@
 
   <script src="js/format.js"></script>
   <script src="js/icons.js"></script>
+  <script src="js/audio.js"></script>
   <script src="js/data.js"></script>
   <script src="js/state.js"></script>
   <script src="js/route.js"></script>

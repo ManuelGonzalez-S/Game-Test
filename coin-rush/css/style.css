@@ -65,13 +65,22 @@ body {
 
 /* ---------- Barra superior ---------- */
 #topbar { flex: 0 0 auto; }
+.topnav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .hub-back {
   display: inline-flex; align-items: center; gap: 2px;
-  margin: 0 0 8px 2px; padding: 6px 12px; border-radius: 999px;
+  padding: 6px 12px; border-radius: 999px;
   background: var(--surface-2); border: 1px solid var(--border);
   color: var(--text-dim); font-size: 0.82rem; font-weight: 700; text-decoration: none;
 }
 .hub-back:active { transform: scale(0.97); }
+.sound-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-dim); cursor: pointer;
+}
+.sound-btn.on { color: var(--mint); border-color: rgba(53,224,161,0.4); }
+.sound-btn:active { transform: scale(0.94); }
 .money-card {
   background: linear-gradient(180deg, var(--surface-2), var(--surface-1));
   border: 1px solid var(--border);
