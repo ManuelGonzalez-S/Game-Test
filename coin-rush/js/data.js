@@ -33,7 +33,7 @@ const GAME = {
     fan:    { name: 'Ventilador', accel: 640 },  // ráfaga (acel. horizontal, pulsada)
     pusher: { name: 'Empujador',  impulse: 120, period: 1.5 }, // empujón periódico
   },
-  moverPool: (t) => (t >= 3 ? ['belt', 'fan', 'pusher'] : t >= 2 ? ['belt', 'fan'] : ['belt']),
+  moverPool: (t) => (t >= 3 ? ['pusher', 'belt', 'fan'] : t >= 2 ? ['belt', 'pusher', 'fan'] : ['belt', 'pusher']),
 
   // Mejoras por partes (se compran con dinero, por niveles independientes)
   tracks: [

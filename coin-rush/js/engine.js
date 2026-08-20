@@ -104,20 +104,27 @@ function bankCoin(c) {
   bankEvents.push({ x: c.x, y: c.y, value: c.value, tier: c.tier });
 }
 
-// Máquina de movimiento: empuja las monedas apoyadas hacia el borde abierto.
+// Máquina de movimiento (empuja las monedas apoyadas hacia el borde abierto):
+//  - belt: arrastre CONTINUO -> las monedas van en fila.
+//  - fan/pusher: SUELO normal; las monedas se AMONTONAN y la máquina las barre
+//    en pulsos (montañas que caen en tandas).
 function applyMover(c, sh, sdt) {
   const dir = sh.dir, pow = moverPower();
   if (sh.mover === 'belt') {
     const target = dir * GAME.movers.belt.beltV * pow;
     c.vx += (target - c.vx) * 0.16;
   } else if (sh.mover === 'fan') {
-    const gust = 0.55 + 0.45 * Math.sin(_time * 6 + sh.index);
-    c.vx += dir * GAME.movers.fan.accel * pow * gust * sdt;
+    // Ráfagas: empuja toda la plataforma a intervalos; entre medias se apila.
+    const gust = Math.sin(_time * 3.4 + sh.index * 1.3);
+    if (gust > 0.15) c.vx += dir * GAME.movers.fan.accel * pow * gust * sdt;
   } else if (sh.mover === 'pusher') {
+    // Barrido periódico de toda la plataforma (empujón en tandas).
     const P = GAME.movers.pusher;
-    const phase = (_time % P.period) / P.period;
-    const nearClosed = dir > 0 ? (c.x < sh.closedX + 64) : (c.x > sh.closedX - 64);
-    if (phase < 0.45 && nearClosed) c.vx += dir * P.impulse * pow * sdt * 3.2;
+    const phase = ((_time + sh.index * 0.4) % P.period) / P.period;
+    if (phase < 0.4) {
+      const target = dir * P.impulse * pow;
+      c.vx += (target - c.vx) * 0.22;
+    }
   }
 }
 
