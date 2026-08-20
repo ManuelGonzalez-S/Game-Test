@@ -15,30 +15,29 @@ const GAME = {
   coinTierRatio: 10,     // valor ×10 por cada tier de moneda
 
   // Generador
-  baseSpawnMs: 1050,     // intervalo base entre monedas (mejora con nivel/habilidades)
+  baseSpawnMs: 1500,     // intervalo base entre monedas (mejora con nivel/habilidades)
   baseCoinValue: 1,      // valor base de una moneda bronce (× multiplicadores)
 
   // Física (vista lateral)
   physics: {
     gravity: 1600,       // px/seg² de caída
-    beltSpeed: 70,       // px/seg base (LENTA al principio; mejora con nivel/habilidades)
-    beltSpeedPerLevel: 0.09, // +9% de velocidad por nivel de tablero
+    beltSpeed: 58,       // px/seg base (LENTA; se mejora con la parte "Velocidad" y habilidades)
     coinR: 15,           // radio de la moneda
   },
 
   // Mejoras por partes (se compran con dinero, por niveles independientes)
   tracks: [
-    { id: 'value',   ico: 'coins', name: 'Valor',     color: '#ffc64b', base: 25, growth: 1.18, per: 0.25,
-      desc: '+25% al valor base de las monedas por nivel.' },
-    { id: 'cadence', ico: 'zap',   name: 'Cadencia',  color: '#5cc8ff', base: 40, growth: 1.19, per: 0.07,
+    { id: 'value',   ico: 'coins', name: 'Valor',     color: '#ffc64b', base: 60,  growth: 1.22, per: 0.22,
+      desc: '+22% al valor base de las monedas por nivel.' },
+    { id: 'cadence', ico: 'zap',   name: 'Cadencia',  color: '#5cc8ff', base: 110, growth: 1.23, per: 0.06,
       desc: 'El generador suelta monedas más a menudo.' },
-    { id: 'speed',   ico: 'wind',  name: 'Velocidad', color: '#35e0a1', base: 30, growth: 1.20, per: 0.10,
+    { id: 'speed',   ico: 'wind',  name: 'Velocidad', color: '#35e0a1', base: 80,  growth: 1.24, per: 0.09,
       desc: 'Las cintas transportan más rápido.' },
   ],
 
   // Tiers de tablero
   slotsForTier: (t) => Math.min(3 + t, 9),          // nº de estaciones por recorrido
-  tierGoal: (t) => Math.ceil(200 * Math.pow(6, t - 1)), // dinero a banquear para ascender
+  tierGoal: (t) => Math.ceil(800 * Math.pow(7, t - 1)), // dinero a banquear para ascender
   diamondReward: (t) => Math.max(1, Math.floor(2 * Math.sqrt(t))),
   spawnTierForTier: (t) => Math.floor((t - 1) / 3),  // tier base de moneda según tier tablero
   baseSwaps: 2,          // cambios de estación por tier (base)

@@ -1,32 +1,29 @@
-# 🪙 Coin Rush
+# 🎮 Centro de Juegos
 
-Juego **2D idle/automación**. Un generador suelta **monedas** que recorren un
-camino pasando por **estaciones** que las potencian (multiplican, suben de tier,
-apuestan, dividen) hasta caer en el **cofre** y sumar a tu dinero.
+Portada (hub) con varios juegos idle que **coexisten**, cada uno en su ruta y con
+su propio guardado. Mobile-first, estático (sin build), desplegable en Vercel.
 
-Mobile-first. Sin instalación: solo abrir en el navegador.
+## Juegos
+- **🪙 Coin Rush** — `/coin-rush/` — monedas que caen por cintas y máquinas hasta el
+  cofre; mejoras por partes (valor/cadencia/velocidad), tiers, diamantes y árbol.
+- **🌱 Jardín Cósmico** — `/jardin/` — da vida a un planeta muerto; eras, prestigio
+  (Florecer), árbol de semillas y 2º prestigio (Supernova).
 
-## ▶️ Cómo jugar
-- Las monedas fluyen solas por el recorrido y caen en el cofre 🧰.
-- Gasta dinero en **subir el nivel del tablero** (más cadencia y valor).
-- Toca una **estación** para cambiarla (1–2 veces por tier, con coste).
-- Llena la **meta del tier** y pulsa **Ascender**: nuevo recorrido + **💎 diamantes**.
-- Gasta 💎 en el **Árbol de Habilidades** (mejoras permanentes).
+La portada está en `/` (raíz). Cada juego tiene un botón para volver al centro.
+Los guardados son independientes (claves distintas en `localStorage`, mismo origen).
 
-## 🧱 Stack
-HTML + CSS + JavaScript vanilla + Canvas 2D + `localStorage`. Sin build.
-
+## Estructura
 ```
-index.html · css/style.css · manifest.webmanifest · vercel.json
-js/  format · data · state · route · engine · render · ui · main
-docs/GAME_DESIGN.md
-archive/jardin-cosmico/   (juego anterior, jugable)
+index.html                 → hub (portada)
+manifest.webmanifest       → PWA del hub
+assets/  fonts/ (compartidas) · hub-icon.svg · icon-*.png
+coin-rush/  index.html · css/ · js/ · assets/ · manifest.webmanifest
+jardin/     index.html · css/ · js/ · assets/ · manifest.webmanifest
+docs/GAME_DESIGN.md        → diseño de Coin Rush
+vercel.json                → estático + cleanUrls
 ```
 
-## 🚀 Despliegue
-Sitio estático. `vercel.json` para desplegar en Vercel sin framework (Preset = *Other*).
-También sirve con `python3 -m http.server`.
-
----
-> El juego anterior, **Jardín Cósmico**, está archivado y jugable en
-> [`archive/jardin-cosmico/`](archive/jardin-cosmico/).
+## Desarrollo
+```bash
+python3 -m http.server 8000   # abre http://localhost:8000
+```

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="Coin Rush: genera monedas, mejoralas por el recorrido y llena el cofre de oro.">
+  <title>Coin Rush</title>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Coin Rush">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Barra superior -->
+    <header id="topbar">
+      <a class="hub-back" href="/">‹ Centro</a>
+      <div class="money-card">
+        <div class="money-label"><i class="ico" data-ico="coins" data-size="16"></i> Dinero</div>
+        <div id="money" class="money">0</div>
+        <div class="chips">
+          <span class="chip chip-mint"><i class="ico" data-ico="trending-up" data-size="14"></i><span id="rate">0/s</span></span>
+          <span class="chip"><span id="tier-label">Tier 1</span></span>
+          <span class="chip chip-diamond"><i class="ico" data-ico="gem" data-size="14"></i><span id="diamonds">0</span></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Máquina -->
+    <main id="stage">
+      <canvas id="board"></canvas>
+    </main>
+
+    <!-- Dock de control -->
+    <section id="dock">
+      <div class="progress">
+        <div id="tier-fill" class="progress-fill"></div>
+        <span id="tier-text" class="progress-label"></span>
+      </div>
+      <div id="tracks" class="tracks-row"></div>
+      <button id="btn-ascend" class="btn btn-ascend wide" disabled>
+        <i class="ico" data-ico="sparkles" data-size="22"></i>
+        <span class="btn-text"><span class="btn-main">Ascender</span>
+          <span id="ascend-info" class="btn-sub"></span></span>
+      </button>
+      <div class="tools">
+        <button id="btn-skills" class="tool-btn"><i class="ico" data-ico="git-branch" data-size="18"></i><span>Árbol</span></button>
+        <button id="btn-backup" class="tool-btn"><i class="ico" data-ico="cloud" data-size="18"></i><span>Copia</span></button>
+        <button id="btn-reset" class="tool-btn danger"><i class="ico" data-ico="rotate-ccw" data-size="18"></i><span>Reiniciar</span></button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal: cambiar estación -->
+  <div id="swap-modal" class="modal" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2><i class="ico" data-ico="wrench" data-size="20"></i> Cambiar estación</h2>
+        <button id="swap-close" class="close-btn"><i class="ico" data-ico="x" data-size="18"></i></button>
+      </div>
+      <p id="swap-info" class="sheet-info"></p>
+      <div id="swap-list" class="opt-list"></div>
+    </div>
+  </div>
+
+  <!-- Modal: árbol de habilidades -->
+  <div id="skills-modal" class="modal" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2><i class="ico" data-ico="git-branch" data-size="20"></i> Habilidades <span id="skills-diamonds" class="head-count"></span></h2>
+        <button id="skills-close" class="close-btn"><i class="ico" data-ico="x" data-size="18"></i></button>
+      </div>
+      <div id="skills-list" class="tree"></div>
+    </div>
+  </div>
+
+  <!-- Modal: copia de seguridad -->
+  <div id="save-modal" class="modal" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2><i class="ico" data-ico="cloud" data-size="20"></i> Copia de seguridad</h2>
+        <button id="save-close" class="close-btn"><i class="ico" data-ico="x" data-size="18"></i></button>
+      </div>
+      <p class="sheet-info">En iPhone la app usa un almacén separado. Copia este código
+        para no perder tu progreso, o pégalo para restaurarlo.</p>
+      <label class="field-label">Tu código</label>
+      <textarea id="save-code" class="code-area" readonly rows="3"></textarea>
+      <button id="save-copy" class="btn btn-ghost wide">Copiar código</button>
+      <label class="field-label">Restaurar</label>
+      <textarea id="save-import" class="code-area" rows="3" placeholder="Pega un código…"></textarea>
+      <button id="save-import-btn" class="btn btn-ghost wide">Importar partida</button>
+    </div>
+  </div>
+
+  <script src="js/format.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/route.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -65,6 +65,13 @@ body {
 
 /* ---------- Barra superior ---------- */
 #topbar { flex: 0 0 auto; }
+.hub-back {
+  display: inline-flex; align-items: center; gap: 2px;
+  margin: 0 0 8px 2px; padding: 6px 12px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-dim); font-size: 0.82rem; font-weight: 700; text-decoration: none;
+}
+.hub-back:active { transform: scale(0.97); }
 .money-card {
   background: linear-gradient(180deg, var(--surface-2), var(--surface-1));
   border: 1px solid var(--border);

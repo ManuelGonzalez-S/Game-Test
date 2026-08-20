@@ -1,17 +1,17 @@
 {
-  "name": "Coin Rush",
-  "short_name": "Coin Rush",
-  "description": "Genera monedas, mejoralas por el recorrido y llena el cofre de oro.",
+  "name": "Centro de Juegos",
+  "short_name": "Juegos",
+  "description": "Centro de juegos: Jardín Cósmico y Coin Rush.",
   "lang": "es",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0f1e",
-  "theme_color": "#0a0f1e",
+  "background_color": "#0a0e18",
+  "theme_color": "#0a0e18",
   "icons": [
     { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/assets/icon.svg", "type": "image/svg+xml", "sizes": "any" }
+    { "src": "/assets/hub-icon.svg", "type": "image/svg+xml", "sizes": "any" }
   ]
 }
