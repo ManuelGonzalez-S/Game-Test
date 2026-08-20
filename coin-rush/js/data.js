@@ -46,7 +46,7 @@ const GAME = {
   ],
 
   // Tiers de tablero
-  slotsForTier: (t) => Math.min(3 + t, 5),          // nº de rampas/estaciones (tope 5)
+  slotsForTier: (t) => Math.min(2 + t, 5),          // nº de plataformas (menos al inicio = más espacio)
   tierGoal: (t) => Math.ceil(1300 * Math.pow(7, t - 1)), // dinero a banquear para ascender
   diamondReward: (t) => Math.max(1, Math.floor(2 * Math.sqrt(t))),
   spawnTierForTier: (t) => Math.floor((t - 1) / 3),  // tier base de moneda según tier tablero

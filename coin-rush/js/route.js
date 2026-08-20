@@ -16,7 +16,7 @@ const Route = (() => {
   }
 
   function build(W, H, tier, slots) {
-    const wallL = 22, wallR = W - 22, top = 70, bot = 92;
+    const wallL = 22, wallR = W - 22, top = 64, bot = 84;
     const shaftW = wallR - wallL;
     const n = slots.length;
     const usable = H - top - bot;
