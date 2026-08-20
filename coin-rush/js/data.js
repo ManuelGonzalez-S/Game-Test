@@ -20,9 +20,8 @@ const GAME = {
 
   // Física (vista lateral)
   physics: {
-    gravity: 1600,       // px/seg² de caída
-    beltSpeed: 58,       // px/seg base (LENTA; se mejora con la parte "Velocidad" y habilidades)
-    coinR: 15,           // radio de la moneda
+    gravity: 1350,       // px/seg² de caída (base; se mejora con "Velocidad" y habilidades)
+    coinR: 12,           // radio de la moneda
   },
 
   // Mejoras por partes (se compran con dinero, por niveles independientes)
@@ -36,7 +35,7 @@ const GAME = {
   ],
 
   // Tiers de tablero
-  slotsForTier: (t) => Math.min(3 + t, 9),          // nº de estaciones por recorrido
+  slotsForTier: (t) => Math.min(3 + t, 5),          // nº de rampas/estaciones (tope 5)
   tierGoal: (t) => Math.ceil(800 * Math.pow(7, t - 1)), // dinero a banquear para ascender
   diamondReward: (t) => Math.max(1, Math.floor(2 * Math.sqrt(t))),
   spawnTierForTier: (t) => Math.floor((t - 1) / 3),  // tier base de moneda según tier tablero

@@ -1,8 +1,8 @@
-// route.js — genera la "máquina" vista de lado: cintas transportadoras en zig-zag
-// hacia abajo, con una estación por cinta. Las monedas caen y ruedan por ellas.
+// route.js — "máquina" de caída vertical: rampas escalonadas alternas (izq/dcha)
+// por las que las monedas caen y ruedan hasta el cofre. Física real (sin cintas).
 
 const Route = (() => {
-  let m = null;               // máquina { belts, stations, hopper, vaultY, W, H }
+  let m = null;
   let lastW = 0, lastH = 0;
 
   function randomSlots(tier) {
@@ -15,27 +15,35 @@ const Route = (() => {
   }
 
   function build(W, H, tier, slots) {
-    const mx = 30;
-    const top = 56, bot = 66;
+    const wallL = 24, wallR = W - 24;
+    const top = 74, bot = 96;
+    const shaftW = wallR - wallL;
     const n = slots.length;
-    const span = H - top - bot;
-    const gap = span / n;
-    const belts = [];
+    const usable = H - top - bot;
+    const rowGap = usable / (n + 1);
+    const rampLen = shaftW * 0.6;
+    const R = GAME.physics.coinR;
+    // La caída de una rampa DEBE dejar holgura > 2R respecto a la siguiente,
+    // o la moneda se encaja entre la punta de una y la superficie de la otra.
+    const drop = Math.max(8, Math.min(rowGap * 0.3, rowGap - 2 * R - 12));
+
+    const ramps = [], stations = [];
     for (let i = 0; i < n; i++) {
-      const y = top + (i + 0.5) * gap + gap * 0.15;
-      const dir = i % 2 === 0 ? 1 : -1; // par: derecha, impar: izquierda
-      belts.push({ y, x1: mx, x2: W - mx, dir, speed: GAME.physics.beltSpeed });
+      const y = top + (i + 1) * rowGap;
+      const left = i % 2 === 0;
+      const ax = left ? wallL : wallR;
+      const bx = left ? wallL + rampLen : wallR - rampLen;
+      const seg = { ax, ay: y, bx, by: y + drop, left, index: i, type: slots[i] };
+      ramps.push(seg);
+      const t = 0.5;
+      stations.push({ index: i, type: slots[i], ramp: i,
+        pos: { x: ax + (bx - ax) * t, y: y + drop * t } });
     }
-    // Una estación por cinta, colocada en la parte final del recorrido de esa cinta.
-    const stations = [];
-    for (let i = 0; i < n; i++) {
-      const b = belts[i];
-      const t = 0.58;
-      const x = b.dir > 0 ? b.x1 + (b.x2 - b.x1) * t : b.x2 - (b.x2 - b.x1) * t;
-      stations.push({ index: i, type: slots[i], belt: i, x, pos: { x, y: b.y - 30 } });
-    }
-    const hopper = { x: mx + 18, y: top - 20 };
-    return { belts, stations, hopper, vaultY: H - bot + 22, W, H };
+    return {
+      ramps, stations, wallL, wallR, top, W, H,
+      bottomY: H - bot + 46,
+      spawn: { x: wallL + shaftW * 0.2, y: top - 14 },
+    };
   }
 
   function set(W, H) {

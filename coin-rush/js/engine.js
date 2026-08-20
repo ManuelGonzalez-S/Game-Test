@@ -36,8 +36,8 @@ function baseCoinValue() {
 function spawnIntervalMs() {
   return GAME.baseSpawnMs / (skillProduct('spawnMult') * trackFactor('cadence'));
 }
-function beltSpeedNow() {
-  return GAME.physics.beltSpeed * skillProduct('speedMult') * trackFactor('speed');
+function gravityNow() {
+  return GAME.physics.gravity * skillProduct('speedMult') * trackFactor('speed');
 }
 function spawnTier() { return GAME.spawnTierForTier(state.tier) + skillAdd('startTier'); }
 function multPower() { return GAME.power.mult + skillAdd('multBonus'); }
@@ -56,8 +56,9 @@ const bankEvents = []; // {x,y,value,tier} consumidos por el render
 function spawnCoin(m) {
   const tier = Math.max(0, Math.min(GAME.coinTiers.length - 1, spawnTier()));
   coins.push({
-    id: _coinId++, x: m.hopper.x + (Math.random() - 0.5) * 6, y: m.hopper.y,
-    vx: 0, vy: 40, tier, belt: null,
+    id: _coinId++, x: m.spawn.x + (Math.random() - 0.5) * 10, y: m.spawn.y,
+    vx: (Math.random() - 0.2) * 40, vy: 30, tier,
+    rot: Math.random() * Math.PI, vrot: (Math.random() - 0.5) * 6,
     value: baseCoinValue() * coinTierValue(tier),
     applied: new Array(m.stations.length).fill(false),
   });
@@ -83,7 +84,8 @@ function applyStation(coin, st) {
       coin.value *= splitFactor();
       coins.push({
         id: _coinId++, x: coin.x, y: coin.y - 4,
-        vx: -coin.__dir * 60, vy: -120, tier: coin.tier, belt: null,
+        vx: (Math.random() - 0.5) * 220, vy: -160, tier: coin.tier,
+        rot: coin.rot, vrot: (Math.random() - 0.5) * 10,
         value: coin.value, applied: coin.applied.slice(),
       });
       break;
@@ -99,12 +101,41 @@ function bankCoin(c) {
   bankEvents.push({ x: c.x, y: c.y, value: c.value, tier: c.tier });
 }
 
+// Colisión de una moneda (círculo) contra una rampa (segmento). Resuelve
+// rebote + rodadura y devuelve true si hubo contacto.
+function collideSeg(c, seg, R) {
+  const dx = seg.bx - seg.ax, dy = seg.by - seg.ay;
+  const len2 = dx * dx + dy * dy || 1;
+  let t = ((c.x - seg.ax) * dx + (c.y - seg.ay) * dy) / len2;
+  if (t < 0) t = 0; else if (t > 1) t = 1;
+  const px = seg.ax + dx * t, py = seg.ay + dy * t;
+  let nx = c.x - px, ny = c.y - py;
+  let dist = Math.hypot(nx, ny);
+  if (dist >= R) return false;
+  if (dist < 0.0001) { nx = 0; ny = -1; dist = 0.0001; }
+  const ux = nx / dist, uy = ny / dist;      // normal rampa -> moneda
+  c.x += ux * (R - dist);                     // separa
+  c.y += uy * (R - dist);
+  // Tangente CUESTA ABAJO (componente +y): garantiza que la moneda siempre baja.
+  let tx = dx / Math.sqrt(len2), ty = dy / Math.sqrt(len2);
+  if (ty < 0) { tx = -tx; ty = -ty; }
+  let along = c.vx * tx + c.vy * ty;          // velocidad a lo largo de la pendiente
+  if (along < 70) along = 70;                 // mínimo (nunca se queda quieta)
+  if (along > 560) along = 560;               // tope
+  const vn = c.vx * ux + c.vy * uy;
+  const bounce = vn < 0 ? -vn * 0.24 : 0;     // rebote pequeño
+  c.vx = tx * along + ux * bounce;
+  c.vy = ty * along + uy * bounce;
+  c.vrot = (tx >= 0 ? 1 : -1) * (along / R);  // giro acorde a la rodadura
+  return true;
+}
+
 function step(dt) {
   const m = Route.get();
   if (!m) return;
   const R = GAME.physics.coinR;
-  const G = GAME.physics.gravity;
-  const belt = beltSpeedNow();
+  const G = gravityNow();
+  const MAXV = 780; // límite de caída (evita atravesar rampas)
 
   // Spawns
   _spawnAcc += dt * 1000;
@@ -115,50 +146,28 @@ function step(dt) {
 
   for (let i = coins.length - 1; i >= 0; i--) {
     const c = coins[i];
+    // Integración
+    c.vy += G * dt;
+    if (c.vy > MAXV) c.vy = MAXV;
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
+    c.rot += c.vrot * dt;
+    c.vrot *= 0.99;
 
-    if (c.belt !== null) {
-      // Sobre una cinta: arrastrada a velocidad constante.
-      const b = m.belts[c.belt];
-      c.__dir = b.dir;
-      c.y = b.y - R;
-      c.x += b.dir * belt * dt;
-      // Estación de esta cinta.
-      for (const st of m.stations) {
-        if (st.belt === c.belt && !c.applied[st.index]) {
-          if ((b.dir > 0 && c.x >= st.x) || (b.dir < 0 && c.x <= st.x)) {
-            c.applied[st.index] = true;
-            applyStation(c, st);
-          }
-        }
-      }
-      // ¿Se cae por el extremo? Baja recto para aterrizar en la cinta de abajo.
-      if ((b.dir > 0 && c.x > b.x2) || (b.dir < 0 && c.x < b.x1)) {
-        c.belt = null; c.vy = 20; c.vx = 0;
-      }
-    } else {
-      // En el aire: gravedad.
-      const prevY = c.y;
-      c.vy += G * dt;
-      c.y += c.vy * dt;
-      c.x += c.vx * dt;
-      c.vx *= 0.985;
-      // Aterrizaje sobre la primera cinta que cruza cayendo.
-      if (c.vy > 0) {
-        for (let bi = 0; bi < m.belts.length; bi++) {
-          const b = m.belts[bi];
-          const surf = b.y - R;
-          // Estricto (<): no re-aterriza en la cinta que acaba de abandonar.
-          if (prevY < surf && c.y >= surf && c.x >= b.x1 - 4 && c.x <= b.x2 + 4) {
-            c.belt = bi; c.y = surf; c.vy = 0; c.vx = 0;
-            break;
-          }
-        }
+    // Paredes
+    if (c.x < m.wallL + R) { c.x = m.wallL + R; c.vx = Math.abs(c.vx) * 0.4; c.vrot += 2; }
+    if (c.x > m.wallR - R) { c.x = m.wallR - R; c.vx = -Math.abs(c.vx) * 0.4; c.vrot -= 2; }
+
+    // Rampas (rebote + rodadura). La estación se activa al primer contacto.
+    for (const ramp of m.ramps) {
+      if (collideSeg(c, ramp, R)) {
+        if (!c.applied[ramp.index]) { c.applied[ramp.index] = true; applyStation(c, m.stations[ramp.index]); }
       }
     }
 
     if (c.dead) { coins.splice(i, 1); continue; }
-    if (c.y >= m.vaultY) { bankCoin(c); coins.splice(i, 1); continue; }
-    if (c.x < -40 || c.x > m.W + 40) { coins.splice(i, 1); } // seguridad
+    if (c.y >= m.bottomY) { bankCoin(c); coins.splice(i, 1); continue; }
+    if (c.y > m.H + 120) { coins.splice(i, 1); } // seguridad
   }
 
   // Tasa (para offline) — EMA cada segundo
