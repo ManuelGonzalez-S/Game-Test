@@ -15,14 +15,25 @@ const GAME = {
   coinTierRatio: 10,     // valor ×10 por cada tier de moneda
 
   // Generador
-  baseSpawnMs: 1500,     // intervalo base entre monedas (mejora con nivel/habilidades)
+  baseSpawnMs: 900,      // intervalo base entre monedas (mejora con nivel/habilidades)
   baseCoinValue: 1,      // valor base de una moneda bronce (× multiplicadores)
 
-  // Física (vista lateral)
+  // Física (coin pusher)
   physics: {
-    gravity: 1350,       // px/seg² de caída (base; se mejora con "Velocidad" y habilidades)
+    gravity: 1300,       // px/seg² de caída
     coinR: 12,           // radio de la moneda
+    coinThick: 6,        // grosor 3D visual
+    maxCoins: 110,       // tope de monedas simultáneas (rendimiento/estabilidad)
   },
+
+  // Máquinas de movimiento (en el extremo cerrado de cada plataforma).
+  // La fuerza escala con la mejora "Velocidad" y habilidades.
+  movers: {
+    belt:   { name: 'Cinta',      beltV: 46 },   // arrastre constante hacia el hueco
+    fan:    { name: 'Ventilador', accel: 640 },  // ráfaga (acel. horizontal, pulsada)
+    pusher: { name: 'Empujador',  impulse: 120, period: 1.5 }, // empujón periódico
+  },
+  moverPool: (t) => (t >= 3 ? ['belt', 'fan', 'pusher'] : t >= 2 ? ['belt', 'fan'] : ['belt']),
 
   // Mejoras por partes (se compran con dinero, por niveles independientes)
   tracks: [
@@ -36,7 +47,7 @@ const GAME = {
 
   // Tiers de tablero
   slotsForTier: (t) => Math.min(3 + t, 5),          // nº de rampas/estaciones (tope 5)
-  tierGoal: (t) => Math.ceil(800 * Math.pow(7, t - 1)), // dinero a banquear para ascender
+  tierGoal: (t) => Math.ceil(1300 * Math.pow(7, t - 1)), // dinero a banquear para ascender
   diamondReward: (t) => Math.max(1, Math.floor(2 * Math.sqrt(t))),
   spawnTierForTier: (t) => Math.floor((t - 1) / 3),  // tier base de moneda según tier tablero
   baseSwaps: 2,          // cambios de estación por tier (base)

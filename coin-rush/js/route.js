@@ -1,5 +1,6 @@
-// route.js — "máquina" de caída vertical: rampas escalonadas alternas (izq/dcha)
-// por las que las monedas caen y ruedan hasta el cofre. Física real (sin cintas).
+// route.js — "coin pusher": plataformas HORIZONTALES con una máquina de movimiento
+// (cinta / ventilador / empujador) en el extremo cerrado que empuja las monedas
+// hacia el borde abierto (con hueco alterno), por donde caen a la de abajo.
 
 const Route = (() => {
   let m = null;
@@ -15,34 +16,35 @@ const Route = (() => {
   }
 
   function build(W, H, tier, slots) {
-    const wallL = 24, wallR = W - 24;
-    const top = 74, bot = 96;
+    const wallL = 22, wallR = W - 22, top = 70, bot = 92;
     const shaftW = wallR - wallL;
     const n = slots.length;
     const usable = H - top - bot;
     const rowGap = usable / (n + 1);
-    const rampLen = shaftW * 0.6;
-    const R = GAME.physics.coinR;
-    // La caída de una rampa DEBE dejar holgura > 2R respecto a la siguiente,
-    // o la moneda se encaja entre la punta de una y la superficie de la otra.
-    const drop = Math.max(8, Math.min(rowGap * 0.3, rowGap - 2 * R - 12));
+    const gapW = Math.min(shaftW * 0.36, 150);
+    const moverPool = GAME.moverPool(tier);
 
-    const ramps = [], stations = [];
+    const shelves = [], stations = [];
     for (let i = 0; i < n; i++) {
       const y = top + (i + 1) * rowGap;
-      const left = i % 2 === 0;
-      const ax = left ? wallL : wallR;
-      const bx = left ? wallL + rampLen : wallR - rampLen;
-      const seg = { ax, ay: y, bx, by: y + drop, left, index: i, type: slots[i] };
-      ramps.push(seg);
-      const t = 0.5;
-      stations.push({ index: i, type: slots[i], ramp: i,
-        pos: { x: ax + (bx - ax) * t, y: y + drop * t } });
+      const gapRight = i % 2 === 0;
+      const x1 = gapRight ? wallL : wallL + gapW;
+      const x2 = gapRight ? wallR - gapW : wallR;
+      const closedX = gapRight ? wallL : wallR;
+      const openX = gapRight ? x2 : x1;
+      const dir = gapRight ? 1 : -1;
+      const mover = moverPool[i % moverPool.length];
+      shelves.push({ index: i, y, x1, x2, dir, closedX, openX, mover, station: slots[i] });
+      // Máquina de valor (gate) junto al borde abierto.
+      const sx = gapRight ? x2 - 16 : x1 + 16;
+      stations.push({ index: i, type: slots[i], shelf: i, pos: { x: sx, y: y - 24 } });
     }
+
+    const s0 = shelves[0];
     return {
-      ramps, stations, wallL, wallR, top, W, H,
-      bottomY: H - bot + 46,
-      spawn: { x: wallL + shaftW * 0.2, y: top - 14 },
+      shelves, stations, wallL, wallR, top, W, H,
+      bankY: H - bot + 40,
+      spawn: { x: s0.closedX + s0.dir * (gapW * 0.4), y: top - 12 },
     };
   }
 
