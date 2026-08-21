@@ -20,9 +20,9 @@ const GAME = {
   // Física (coin pusher) — viaje lento y contemplativo
   physics: {
     gravity: 720,        // caída suave y flotante
-    coinR: 12,
-    coinThick: 6,
-    maxCoins: 120,
+    coinR: 16,           // monedas grandes (escenario cercano)
+    coinThick: 8,
+    maxCoins: 110,
   },
 
   // Máquinas de movimiento (extremo cerrado de cada plataforma). Escalan con el

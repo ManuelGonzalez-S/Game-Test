@@ -55,16 +55,18 @@ body {
 .ico { display: inline-flex; align-items: center; justify-content: center; }
 .ico svg { display: block; }
 
-#app {
-  display: flex; flex-direction: column;
-  min-height: 100vh; min-height: 100dvh;
-  max-width: 560px; margin: 0 auto;
-  padding: calc(8px + var(--safe-top)) 12px calc(10px + var(--safe-bottom));
-  gap: 8px;
-}
+/* El escenario es un POZO a pantalla completa; el HUD flota encima. */
+#app { display: block; min-height: 100vh; min-height: 100dvh; }
 
-/* ---------- Barra superior ---------- */
-#topbar { flex: 0 0 auto; }
+/* ---------- Barra superior (flotante) ---------- */
+#topbar {
+  position: fixed; z-index: 3; top: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 560px;
+  padding: calc(8px + var(--safe-top)) 12px 10px;
+  background: linear-gradient(to bottom, rgba(7,20,13,0.82) 55%, transparent);
+  pointer-events: none;
+}
+#topbar > * { pointer-events: auto; }
 .topnav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .hub-back {
   display: inline-flex; align-items: center; gap: 2px;
@@ -123,20 +125,22 @@ body {
 
 /* ---------- Máquina (canvas) ---------- */
 #stage {
-  position: relative; flex: 1 1 auto; min-height: 54vh;
-  border-radius: var(--r-lg);
-  border: 2px solid rgba(120,84,40,0.55);        /* marco de madera */
+  position: fixed; inset: 0; z-index: 0;          /* pozo a pantalla completa */
   background: #0c2417;                             /* base de tapete */
-  box-shadow:
-    var(--shadow),
-    inset 0 0 0 3px rgba(214,178,94,0.10),         /* filete dorado */
-    inset 0 2px 12px rgba(0,0,0,0.55);
   overflow: hidden;
 }
 #board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
 
-/* ---------- Dock ---------- */
-#dock { flex: 0 0 auto; display: flex; flex-direction: column; gap: 10px; }
+/* ---------- Dock (flotante) ---------- */
+#dock {
+  position: fixed; z-index: 3; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 560px;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 12px calc(10px + var(--safe-bottom));
+  background: linear-gradient(to top, rgba(7,20,13,0.9) 62%, transparent);
+  pointer-events: none;
+}
+#dock > * { pointer-events: auto; }
 .progress {
   position: relative; height: 26px; border-radius: 999px;
   background: var(--surface-1); border: 1px solid var(--border); overflow: hidden;

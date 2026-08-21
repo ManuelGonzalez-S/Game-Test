@@ -24,7 +24,12 @@ const Render = (() => {
     W = Math.max(200, r.width); H = Math.max(200, r.height);
     canvas.width = Math.floor(W * dpr); canvas.height = Math.floor(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    Route.set(W, H);
+    // Reserva el alto real del HUD flotante (barra superior y dock) para que la
+    // tolva y el cofre no queden tapados.
+    const tb = document.getElementById('topbar'), dk = document.getElementById('dock');
+    const insetTop = tb ? tb.offsetHeight : 120;
+    const insetBot = dk ? dk.offsetHeight : 180;
+    Route.set(W, H, insetTop, insetBot);
   }
   function size() { return { W, H }; }
 
@@ -75,9 +80,9 @@ const Render = (() => {
     const cost = shelfUpCost(sh.index);
     const afford = canBuyShelf(sh.index);
     const label = '$' + formatNumber(cost);
-    ctx.font = '800 12px Sora, Inter, sans-serif';
+    ctx.font = '800 15px Sora, Inter, sans-serif';
     const tw = ctx.measureText(label).width;
-    const padX = 8, h = 22, w = tw + padX * 2;
+    const padX = 11, h = 28, w = tw + padX * 2;
     const cx = sh.tag.x, cy = sh.tag.y;
     let x = cx - w / 2;
     x = Math.max(sh.x1, Math.min(sh.x2 - w, x)); // dentro de la plataforma
@@ -98,13 +103,13 @@ const Render = (() => {
     // nivel (sello encima a la derecha)
     if (lvl > 0) {
       const lt = 'Nv.' + lvl;
-      ctx.font = '800 9px Sora, Inter, sans-serif';
-      const ltw = ctx.measureText(lt).width + 8;
-      const lx = x + w - ltw / 2, ly = y - 5;
-      ctx.fillStyle = WOOD; roundRect(lx - ltw / 2, ly - 8, ltw, 13, 6); ctx.fill();
-      ctx.strokeStyle = BRASS; ctx.lineWidth = 1; roundRect(lx - ltw / 2, ly - 8, ltw, 13, 6); ctx.stroke();
+      ctx.font = '800 11px Sora, Inter, sans-serif';
+      const ltw = ctx.measureText(lt).width + 10;
+      const lx = x + w - ltw / 2, ly = y - 6;
+      ctx.fillStyle = WOOD; roundRect(lx - ltw / 2, ly - 9, ltw, 16, 7); ctx.fill();
+      ctx.strokeStyle = BRASS; ctx.lineWidth = 1; roundRect(lx - ltw / 2, ly - 9, ltw, 16, 7); ctx.stroke();
       ctx.fillStyle = GOLD_HI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(lt, lx, ly - 1.5);
+      ctx.fillText(lt, lx, ly - 1);
     }
   }
 
@@ -134,7 +139,7 @@ const Render = (() => {
   }
 
   function drawShelf(m, sh) {
-    const th = 12, x = sh.x1, w = sh.x2 - sh.x1, y = sh.y;
+    const th = 18, x = sh.x1, w = sh.x2 - sh.x1, y = sh.y;
     // sombra proyectada suave sobre el tapete
     ctx.fillStyle = 'rgba(0,0,0,0.28)'; roundRect(x + 3, y - th / 2 + 6, w, th, 5); ctx.fill();
     // cuerpo de acero cepillado
@@ -179,22 +184,22 @@ const Render = (() => {
       ctx.restore();
       roller(x, y); roller(x + w, y);
     } else if (sh.mover === 'fan') {
-      const cx = dir > 0 ? x + 17 : x + w - 17;
-      const cy = y - 17;
+      const cx = dir > 0 ? x + 22 : x + w - 22;
+      const cy = y - 22;
       // caja de latón
-      const bg = ctx.createLinearGradient(0, cy - 13, 0, cy + 13);
+      const bg = ctx.createLinearGradient(0, cy - 17, 0, cy + 17);
       bg.addColorStop(0, BRASS); bg.addColorStop(1, BRASS_DK);
-      ctx.fillStyle = bg; roundRect(cx - 13, cy - 13, 26, 26, 6); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.fillStyle = bg; roundRect(cx - 17, cy - 17, 34, 34, 8); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.6; ctx.stroke();
       // aspas girando (metal claro)
       ctx.save(); ctx.translate(cx, cy); ctx.rotate(tick * 0.32 * dir);
       ctx.fillStyle = '#d7dbe2';
       for (let a = 0; a < 4; a++) {
         ctx.rotate(Math.PI / 2);
-        ctx.beginPath(); ctx.ellipse(4, 0, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(5, 0, 9, 4, 0, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
-      ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(cx, cy, 2.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
     } else if (sh.mover === 'pusher') {
       // Barra física con pistón: misma posición que el motor de físicas.
       const bar = pusherBar(sh);
@@ -224,11 +229,11 @@ const Render = (() => {
     ctx.fillText(names[sh.mover] || '', dir > 0 ? x + 4 : x + w - 4, y + 9);
   }
   function roller(cx, cy) {
-    const g = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, 7.5);
+    const g = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, 10);
     g.addColorStop(0, GOLD_HI); g.addColorStop(0.5, BRASS); g.addColorStop(1, BRASS_DK);
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 7.5, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx, cy, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
   }
 
   function drawStation(st) {
@@ -238,21 +243,21 @@ const Render = (() => {
       ctx.globalAlpha = pulse * 0.45; ctx.fillStyle = GOLD;
       ctx.beginPath(); ctx.arc(x, y, 24, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
     }
-    const s = 34 + pulse * 6;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(x - s / 2 + 2, y - s / 2 + 3, s, s, 10); ctx.fill();
+    const s = 44 + pulse * 7;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(x - s / 2 + 2, y - s / 2 + 3, s, s, 12); ctx.fill();
     // ficha de cuero/madera oscura con bisel de latón
     const g = ctx.createLinearGradient(0, y - s / 2, 0, y + s / 2);
     g.addColorStop(0, '#2a2016'); g.addColorStop(1, '#160f09');
-    roundRect(x - s / 2, y - s / 2, s, s, 10); ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = BRASS; ctx.lineWidth = 1.6; ctx.stroke();
+    roundRect(x - s / 2, y - s / 2, s, s, 12); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = BRASS; ctx.lineWidth = 1.8; ctx.stroke();
     ctx.strokeStyle = 'rgba(246,230,172,0.25)'; ctx.lineWidth = 1;
-    roundRect(x - s / 2 + 2.5, y - s / 2 + 2.5, s - 5, s - 5, 8); ctx.stroke();
-    drawIcon(GAME.stations[st.type].ico, GOLD_HI, x, y, 20);
+    roundRect(x - s / 2 + 3, y - s / 2 + 3, s - 6, s - 6, 9); ctx.stroke();
+    drawIcon(GAME.stations[st.type].ico, GOLD_HI, x, y, 26);
     st.pulse = pulse * 0.86;
   }
 
   function drawDispenser(m) {
-    const x = m.spawn.x, y = m.spawn.y, w = 48, hh = 30;
+    const x = m.spawn.x, y = m.spawn.y, w = 62, hh = 40;
     ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(x - w / 2 + 2, y - hh + 5, w, hh, 8); ctx.fill();
     // tolva de latón
     const g = ctx.createLinearGradient(0, y - hh, 0, y);
@@ -263,16 +268,16 @@ const Render = (() => {
     ctx.beginPath(); ctx.moveTo(x - w / 2 + 4, y - hh + 3); ctx.lineTo(x + w / 2 - 4, y - hh + 3); ctx.stroke();
     // boca de salida
     ctx.fillStyle = '#120c06';
-    ctx.beginPath(); ctx.moveTo(x - 11, y); ctx.lineTo(x + 11, y);
-    ctx.lineTo(x + 6, y + 9); ctx.lineTo(x - 6, y + 9); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - 14, y); ctx.lineTo(x + 14, y);
+    ctx.lineTo(x + 8, y + 11); ctx.lineTo(x - 8, y + 11); ctx.closePath(); ctx.fill();
     // moneditas decorativas dentro
     ctx.fillStyle = GAME.coinTiers[2].color;
-    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x - 8 + i * 8, y - hh / 2, 4, 0, Math.PI * 2); ctx.fill(); }
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x - 11 + i * 11, y - hh / 2, 5, 0, Math.PI * 2); ctx.fill(); }
   }
 
   function drawVault(m) {
-    const w = Math.min(200, m.W * 0.68), hh = 54 + vaultPulse * 5;
-    const x = m.W / 2 - w / 2, y = m.bankY - 10;
+    const w = Math.min(280, m.W * 0.74), hh = 66 + vaultPulse * 6;
+    const x = m.W / 2 - w / 2, y = m.bankY - 12;
     if (vaultPulse > 0.02) {
       ctx.globalAlpha = vaultPulse * 0.35; ctx.fillStyle = GOLD;
       roundRect(x - 8, y - 8, w + 16, hh + 16, 16); ctx.fill(); ctx.globalAlpha = 1;
@@ -287,18 +292,18 @@ const Render = (() => {
     ctx.fillStyle = 'rgba(185,139,62,0.55)';
     for (const bx of [x + w * 0.2, x + w * 0.8 - 4]) roundRect(bx, y + 2, 4, hh - 4, 2), ctx.fill();
     // pila de monedas creciente (oro/plata)
-    const heap = 4 + Math.round(pile * 10);
+    const heap = 5 + Math.round(pile * 12);
     for (let i = 0; i < heap; i++) {
-      const rx = m.W / 2 + (Math.sin(i * 2.3) * w * 0.34);
-      const ry = y + hh - 9 - (i % 4) * 5;
+      const rx = m.W / 2 + (Math.sin(i * 2.3) * w * 0.36);
+      const ry = y + hh - 11 - (i % 4) * 6;
       const t = i % 3 ? GAME.coinTiers[2] : GAME.coinTiers[1];
       ctx.fillStyle = t.color;
-      ctx.beginPath(); ctx.ellipse(rx, ry, 6.5, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(rx, ry, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      ctx.beginPath(); ctx.ellipse(rx - 1.5, ry - 1, 2.4, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(rx - 2, ry - 1.4, 3, 1.5, 0, 0, Math.PI * 2); ctx.fill();
     }
     // placa de latón con el icono del cofre
-    drawIcon('vault', GOLD_HI, m.W / 2, y + 15, 22);
+    drawIcon('vault', GOLD_HI, m.W / 2, y + 18, 28);
     vaultPulse *= 0.86;
   }
 
@@ -342,7 +347,7 @@ const Render = (() => {
       if (Math.abs(cosr) > 0.55) {
         const label = formatNumber(c.value);
         ctx.save(); ctx.scale(1, Math.abs(cosr));
-        ctx.font = '800 ' + (label.length > 4 ? 8 : 10) + 'px Sora, Inter, sans-serif';
+        ctx.font = '800 ' + (label.length > 4 ? 10 : 13) + 'px Sora, Inter, sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.globalAlpha = (Math.abs(cosr) - 0.55) / 0.45;
         ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillText(label, 0, -0.8); // realce superior
