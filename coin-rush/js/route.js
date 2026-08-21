@@ -34,7 +34,9 @@ const Route = (() => {
       const openX = gapRight ? x2 : x1;
       const dir = gapRight ? 1 : -1;
       const mover = moverPool[i % moverPool.length];
-      shelves.push({ index: i, y, x1, x2, dir, closedX, openX, mover, station: slots[i] });
+      // Etiqueta de mejora de la plataforma (junto al extremo cerrado, sobre ella).
+      const tag = { x: gapRight ? wallL + 30 : wallR - 30, y: y - 26 };
+      shelves.push({ index: i, y, x1, x2, dir, closedX, openX, mover, station: slots[i], tag });
       // Máquina de valor (gate) junto al borde abierto.
       const sx = gapRight ? x2 - 16 : x1 + 16;
       stations.push({ index: i, type: slots[i], shelf: i, pos: { x: sx, y: y - 24 } });
@@ -51,11 +53,18 @@ const Route = (() => {
   function set(W, H) {
     lastW = W; lastH = H;
     if (!state.route) state.route = { tier: state.tier, slots: randomSlots(state.tier) };
+    // Niveles de mejora por plataforma (propios de este tier).
+    if (!Array.isArray(state.route.levels) || state.route.levels.length !== state.route.slots.length) {
+      state.route.levels = new Array(state.route.slots.length).fill(0);
+    }
     m = build(W, H, state.route.tier, state.route.slots);
   }
   function rebuild() { if (lastW && lastH) set(lastW, lastH); }
   function get() { return m; }
-  function newForTier(tier) { state.route = { tier, slots: randomSlots(tier) }; }
+  function newForTier(tier) {
+    const slots = randomSlots(tier);
+    state.route = { tier, slots, levels: new Array(slots.length).fill(0) };
+  }
 
   return { set, rebuild, get, newForTier, randomSlots, build };
 })();

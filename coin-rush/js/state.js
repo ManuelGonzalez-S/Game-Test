@@ -7,11 +7,9 @@ function defaultState() {
     money: 0,
     diamonds: 0,
     tier: 1,
-    tracks: { value: 0, cadence: 0, speed: 0 }, // mejoras por partes (dinero)
     bankedThisTier: 0,   // dinero banqueado en este tier (meta de ascenso)
     totalBanked: 0,      // total histórico
-    swapsUsed: 0,        // cambios de estación usados este tier
-    route: null,         // { tier, slots: [tipo|null, ...] } (geometría se recalcula)
+    route: null,         // { tier, slots:[...], levels:[...] } (geometría se recalcula)
     skills: {},          // id -> true
     rate: 0,             // EMA de dinero/seg (para offline)
     lastSeen: Date.now(),
@@ -26,13 +24,8 @@ function normalizeState() {
   const d = defaultState();
   for (const k in d) if (!(k in state)) state[k] = d[k];
   if (!state.skills || typeof state.skills !== 'object') state.skills = {};
-  if (!state.tracks || typeof state.tracks !== 'object') state.tracks = { value: 0, cadence: 0, speed: 0 };
-  for (const t of GAME.tracks) if (typeof state.tracks[t.id] !== 'number') state.tracks[t.id] = 0;
-  // Migración desde la antigua mejora única (boardLevel).
-  if (typeof state.boardLevel === 'number' && state.boardLevel > 0 && state.tracks.value === 0) {
-    state.tracks.value = state.boardLevel;
-    delete state.boardLevel;
-  }
+  // Limpia campos de versiones anteriores (mejoras globales / cambios de estación).
+  delete state.tracks; delete state.swapsUsed; delete state.boardLevel;
   return state;
 }
 

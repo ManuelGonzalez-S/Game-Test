@@ -13,37 +13,38 @@ function skillAdd(field) {
   return a;
 }
 
-// ---- Mejoras por partes (tracks) ----
-function trackLevel(id) { return (state.tracks && state.tracks[id]) || 0; }
-function trackFactor(id) { return 1 + trackDef(id).per * trackLevel(id); }
-function trackCost(id) {
-  const t = trackDef(id);
-  return Math.ceil(t.base * Math.pow(t.growth, trackLevel(id)));
+// ---- Mejora por plataforma (nivel propio de cada plataforma del tier) ----
+function shelfLevel(i) { return (state.route && state.route.levels && state.route.levels[i]) || 0; }
+function shelfUpCost(i) {
+  const s = GAME.shelfUp;
+  return Math.ceil(s.base * Math.pow(s.growth, shelfLevel(i)) * Math.pow(s.tierMult, state.tier - 1));
 }
-function canBuyTrack(id) { return state.money >= trackCost(id); }
-function buyTrack(id) {
-  const c = trackCost(id);
+function canBuyShelf(i) { return state.money >= shelfUpCost(i); }
+function buyShelfUpgrade(i) {
+  const c = shelfUpCost(i);
   if (state.money < c) return false;
   state.money -= c;
-  state.tracks[id] = trackLevel(id) + 1;
+  state.route.levels[i] = shelfLevel(i) + 1;
   return true;
 }
+function shelfValueMult(i) { return 1 + GAME.shelfUp.valuePer * shelfLevel(i); }
 
 // ---- Valores derivados ----
 function baseCoinValue() {
-  return GAME.baseCoinValue * skillProduct('baseValueMult') * trackFactor('value');
+  return GAME.baseCoinValue * skillProduct('baseValueMult');
 }
 function spawnIntervalMs() {
-  return GAME.baseSpawnMs / (skillProduct('spawnMult') * trackFactor('cadence'));
+  return GAME.baseSpawnMs / skillProduct('spawnMult');
 }
-// La mejora "Velocidad" (y la habilidad) potencia las máquinas de movimiento.
-function moverPower() { return skillProduct('speedMult') * trackFactor('speed'); }
+// Potencia de la máquina de una plataforma (habilidad × nivel de la plataforma).
+function moverPower(shelfIdx) {
+  return skillProduct('speedMult') * (1 + GAME.shelfUp.speedPer * shelfLevel(shelfIdx || 0));
+}
 function spawnTier() { return GAME.spawnTierForTier(state.tier) + skillAdd('startTier'); }
 function multPower() { return GAME.power.mult + skillAdd('multBonus'); }
 function forgeChance() { return GAME.power.forgeChance + skillAdd('forgeBonus'); }
 function casinoWinChance() { return GAME.power.casinoWin + skillAdd('casinoWinBonus'); }
 function splitFactor() { return GAME.power.splitFactor + skillAdd('splitBonus'); }
-function maxSwaps() { return GAME.baseSwaps + skillAdd('swaps'); }
 
 // ---- Monedas ----
 let coins = [];
@@ -95,6 +96,8 @@ function applyStation(coin, st) {
       break;
     }
   }
+  // Mejora de la propia plataforma: aumenta el valor de las monedas que pasan.
+  coin.value *= shelfValueMult(st.index);
 }
 
 function bankCoin(c) {
@@ -105,26 +108,61 @@ function bankCoin(c) {
   bankEvents.push({ x: c.x, y: c.y, value: c.value, tier: c.tier });
 }
 
-// Máquina de movimiento (empuja las monedas apoyadas hacia el borde abierto):
+// Máquina de movimiento apoyada (belt y fan). El EMPUJADOR no va aquí: es una
+// barra FÍSICA que empuja por colisión (ver pusherBar + physicsStep).
 //  - belt: arrastre CONTINUO -> las monedas van en fila.
-//  - fan/pusher: SUELO normal; las monedas se AMONTONAN y la máquina las barre
-//    en pulsos (montañas que caen en tandas).
+//  - fan: ráfagas de aire; entre medias las monedas se AMONTONAN.
 function applyMover(c, sh, sdt) {
-  const dir = sh.dir, pow = moverPower();
+  const dir = sh.dir, pow = moverPower(sh.index);
   if (sh.mover === 'belt') {
     const target = dir * GAME.movers.belt.beltV * pow;
-    c.vx += (target - c.vx) * 0.16;
+    c.vx += (target - c.vx) * 0.30; // vence la fricción de apilado -> flujo constante
   } else if (sh.mover === 'fan') {
     // Ráfagas: empuja toda la plataforma a intervalos; entre medias se apila.
     const gust = Math.sin(_time * 3.4 + sh.index * 1.3);
     if (gust > 0.15) c.vx += dir * GAME.movers.fan.accel * pow * gust * sdt;
-  } else if (sh.mover === 'pusher') {
-    // Barrido periódico de toda la plataforma (empujón en tandas).
-    const P = GAME.movers.pusher;
-    const phase = ((_time + sh.index * 0.4) % P.period) / P.period;
-    if (phase < 0.4) {
-      const target = dir * P.impulse * pow;
-      c.vx += (target - c.vx) * 0.22;
+  }
+}
+
+// Barra física del empujador de una plataforma en el instante actual.
+//  - Sale del extremo cerrado y avanza hacia el hueco (fase de empuje),
+//    luego se retrae. Empuja SOLO al avanzar y SOLO por contacto.
+function pusherBar(sh) {
+  const P = GAME.movers.pusher;
+  const width = sh.x2 - sh.x1;
+  const stroke = width * P.strokeFrac;
+  const phase = ((_time + sh.index * 0.4) % P.period) / P.period;
+  const PUSH = 0.5; // mitad de ciclo empujando, mitad retrayéndose
+  let ext, pushing;
+  if (phase < PUSH) { ext = phase / PUSH; pushing = true; }
+  else { ext = 1 - (phase - PUSH) / (1 - PUSH); pushing = false; }
+  const base = sh.closedX + sh.dir * 6;            // cara trasera (extremo cerrado)
+  const frontX = base + sh.dir * ext * stroke;      // cara delantera (empuja aquí)
+  const speed = (stroke / (P.period * PUSH)) * moverPower(sh.index); // px/s del avance
+  return { base, frontX, dir: sh.dir, pushing, speed, stroke, phase };
+}
+
+// Colisión de la barra del empujador con las monedas apoyadas en su plataforma.
+function pushBarCollide(sh, R) {
+  const bar = pusherBar(sh);
+  if (!bar.pushing) return;                         // al retraerse no arrastra
+  const dir = bar.dir;
+  const barH = R * 3.4;                             // alto de la barra (atrapa montañas)
+  const yTop = sh.y - barH, yBot = sh.y + R;
+  for (const c of coins) {
+    if (c.y < yTop || c.y > yBot) continue;          // fuera del alto de la barra
+    if (c.x < sh.x1 - R || c.x > sh.x2 + R) continue; // fuera de la plataforma
+    if (dir > 0) {
+      // Barra sólida de [base, frontX]; empuja lo que quede dentro hacia delante.
+      if (c.x > bar.base - R && c.x < bar.frontX + R) {
+        c.x = bar.frontX + R;
+        if (c.vx < bar.speed) c.vx = bar.speed;
+      }
+    } else {
+      if (c.x < bar.base + R && c.x > bar.frontX - R) {
+        c.x = bar.frontX - R;
+        if (c.vx > -bar.speed) c.vx = -bar.speed;
+      }
     }
   }
 }
@@ -154,6 +192,8 @@ function physicsStep(m, sdt, R, G, MAXV) {
       }
     }
   }
+  // Empujadores: barra física que empuja por colisión.
+  for (const sh of m.shelves) if (sh.mover === 'pusher') pushBarCollide(sh, R);
   // Colisión moneda-moneda (apilado). 2 iteraciones.
   const min = 2 * R, min2 = min * min;
   for (let it = 0; it < 2; it++) {
@@ -219,10 +259,9 @@ function step(dt) {
   }
 
   // Detecta el inicio del barrido de cada empujador (para sonido/partículas).
-  const P = GAME.movers.pusher;
   for (const sh of m.shelves) {
     if (sh.mover !== 'pusher') continue;
-    const pushing = ((_time + sh.index * 0.4) % P.period) / P.period < 0.4;
+    const pushing = pusherBar(sh).pushing;
     if (pushing && !sh._wasPushing) moverEvents.push({ x: sh.closedX, y: sh.y, dir: sh.dir });
     sh._wasPushing = pushing;
   }
@@ -249,27 +288,10 @@ function ascend() {
   state.diamonds += gain;
   state.tier++;
   state.bankedThisTier = 0;
-  state.swapsUsed = 0;
   Route.newForTier(state.tier);
   Route.rebuild();
   clearCoins();
   return gain;
-}
-
-// ---- Cambio de estaciones ----
-function swapCost() {
-  return Math.ceil(60 * Math.pow(4, state.swapsUsed) * Math.pow(5, state.tier - 1));
-}
-function canSwap() { return state.swapsUsed < maxSwaps() && state.money >= swapCost(); }
-function doSwap(slotIndex, newType) {
-  if (state.swapsUsed >= maxSwaps()) return false;
-  const cost = swapCost();
-  if (state.money < cost) return false;
-  state.money -= cost;
-  state.route.slots[slotIndex] = newType;
-  state.swapsUsed++;
-  Route.rebuild();
-  return true;
 }
 
 // ---- Habilidades (compra) ----

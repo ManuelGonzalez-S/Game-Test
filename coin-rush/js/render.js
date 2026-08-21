@@ -62,7 +62,46 @@ const Render = (() => {
     for (const st of m.stations) drawStation(st);
     drawDispenser(m);
     drawCoins();
+    for (const sh of m.shelves) drawShelfTag(sh);
     drawFx();
+  }
+
+  // Etiqueta de mejora de cada plataforma ($precio · Nv), tipo máquina de arcade.
+  function drawShelfTag(sh) {
+    const lvl = shelfLevel(sh.index);
+    const cost = shelfUpCost(sh.index);
+    const afford = canBuyShelf(sh.index);
+    const label = '$' + formatNumber(cost);
+    ctx.font = '800 12px Sora, Inter, sans-serif';
+    const tw = ctx.measureText(label).width;
+    const padX = 8, h = 22, w = tw + padX * 2;
+    const cx = sh.tag.x, cy = sh.tag.y;
+    let x = cx - w / 2;
+    x = Math.max(sh.x1, Math.min(sh.x2 - w, x)); // dentro de la plataforma
+    const y = cy - h / 2;
+    sh._tagRect = { x, y, w, h };                 // para el hit-test del tap
+    // cuerpo del cartel
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(x + 1.5, y + 2, w, h, 7); ctx.fill();
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    if (afford) { g.addColorStop(0, '#2fae6b'); g.addColorStop(1, '#1c7a4a'); }
+    else { g.addColorStop(0, '#33404f'); g.addColorStop(1, '#232c38'); }
+    roundRect(x, y, w, h, 7); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = afford ? 'rgba(120,255,190,0.7)' : 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1.2; ctx.stroke();
+    // precio
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = afford ? '#eafff3' : '#9fb0c2';
+    ctx.fillText(label, x + w / 2, y + h / 2 + 0.5);
+    // nivel (chip encima a la derecha)
+    if (lvl > 0) {
+      const lt = 'Nv.' + lvl;
+      ctx.font = '800 9px Sora, Inter, sans-serif';
+      const ltw = ctx.measureText(lt).width + 8;
+      const lx = x + w - ltw / 2, ly = y - 5;
+      ctx.fillStyle = '#ffc64b'; roundRect(lx - ltw / 2, ly - 8, ltw, 13, 6); ctx.fill();
+      ctx.fillStyle = '#2a1c05'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(lt, lx, ly - 1.5);
+    }
   }
 
   function drawShaft(m) {
@@ -120,14 +159,19 @@ const Render = (() => {
       ctx.restore();
       ctx.fillStyle = '#1a2230'; ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI * 2); ctx.fill();
     } else if (sh.mover === 'pusher') {
-      const P = GAME.movers.pusher;
-      const phase = (tick * 0.016 % P.period) / P.period;
-      const ext = phase < 0.45 ? (phase / 0.45) : (1 - (phase - 0.45) / 0.55);
-      const baseX = dir > 0 ? x : x + w;
-      const bx = baseX + dir * (6 + ext * 26);
-      ctx.fillStyle = '#c26b4a';
-      roundRect(dir > 0 ? baseX - 4 : bx, y - th / 2 - 12, Math.abs(bx - baseX) + 8, th + 12, 3); ctx.fill();
-      ctx.fillStyle = '#e08a5c'; roundRect(bx - (dir > 0 ? 0 : 8), y - th / 2 - 14, 8, th + 16, 3); ctx.fill();
+      // Barra física: misma posición que la del motor de físicas.
+      const bar = pusherBar(sh);
+      const barH = th + 22;
+      const yTop = y - th / 2 - 16;
+      const backX = bar.base, frontX = bar.frontX;
+      const bx = Math.min(backX, frontX), bw = Math.abs(frontX - backX);
+      // vástago
+      ctx.fillStyle = bar.pushing ? '#c26b4a' : '#8f5238';
+      roundRect(bx, y - th / 2 - 6, bw, th + 6, 3); ctx.fill();
+      // cabeza (cara que empuja)
+      ctx.fillStyle = bar.pushing ? '#f0a06a' : '#b0704c';
+      roundRect(frontX - (dir > 0 ? 0 : 9), yTop, 9, barH, 3); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
     }
     // etiqueta del tipo de máquina (bajo el extremo cerrado)
     const names = { belt: 'CINTA', fan: 'VENTILADOR', pusher: 'EMPUJADOR' };
