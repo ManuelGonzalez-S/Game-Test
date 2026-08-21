@@ -13,24 +13,24 @@ const GAME = {
   ],
   coinTierRatio: 10,
 
-  // Generador
-  baseSpawnMs: 1100,
+  // Generador — monedas una a una, pausado
+  baseSpawnMs: 2000,
   baseCoinValue: 1,
 
-  // Física (coin pusher) — viaje tranquilo (sin atascos)
+  // Física (coin pusher) — viaje lento y contemplativo
   physics: {
-    gravity: 1000,       // caída más suave
+    gravity: 720,        // caída suave y flotante
     coinR: 12,
     coinThick: 6,
-    maxCoins: 130,
+    maxCoins: 120,
   },
 
   // Máquinas de movimiento (extremo cerrado de cada plataforma). Escalan con el
   // nivel de la plataforma y la habilidad de velocidad.
   movers: {
-    belt:   { name: 'Cinta',      beltV: 72 },              // arrastre continuo, calmado
-    fan:    { name: 'Ventilador', accel: 560 },             // ráfagas
-    pusher: { name: 'Empujador',  period: 2.0, strokeFrac: 0.8 }, // barra física
+    belt:   { name: 'Cinta',      beltV: 48 },              // arrastre continuo, calmado
+    fan:    { name: 'Ventilador', accel: 440 },             // ráfagas
+    pusher: { name: 'Empujador',  period: 2.4, strokeFrac: 0.8 }, // barra física
   },
   moverPool: (t) => (t >= 3 ? ['pusher', 'belt', 'fan'] : t >= 2 ? ['belt', 'pusher', 'fan'] : ['belt', 'pusher']),
 
