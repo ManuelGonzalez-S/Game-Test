@@ -30,7 +30,7 @@ const GAME = {
   movers: {
     belt:   { name: 'Cinta',      beltV: 48 },              // arrastre continuo, calmado
     fan:    { name: 'Ventilador', accel: 440 },             // ráfagas
-    pusher: { name: 'Empujador',  period: 2.4, strokeFrac: 0.8 }, // barra física
+    pusher: { name: 'Empujador',  period: 3.6, strokeFrac: 0.72, pushFrac: 0.62 }, // barra física, lenta
   },
   moverPool: (t) => (t >= 3 ? ['pusher', 'belt', 'fan'] : t >= 2 ? ['belt', 'pusher', 'fan'] : ['belt', 'pusher']),
 

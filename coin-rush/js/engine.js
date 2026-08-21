@@ -61,7 +61,8 @@ function spawnCoin(m) {
   coins.push({
     id: _coinId++, x: m.spawn.x + (Math.random() - 0.5) * 12, y: m.spawn.y,
     vx: (Math.random() - 0.5) * 20, vy: 20, tier,
-    rot: Math.random() * Math.PI, vrot: (Math.random() - 0.5) * 7,
+    rot: 0, vrot: 0,                                   // tumbada (cara arriba)
+    spin: Math.random() * Math.PI * 2,                 // giro en el plano (decorativo)
     value: baseCoinValue() * coinTierValue(tier),
     applied: new Array(m.shelves.length).fill(false),
   });
@@ -89,7 +90,7 @@ function applyStation(coin, st) {
         coins.push({
           id: _coinId++, x: coin.x + (Math.random() - 0.5) * 10, y: coin.y - 6,
           vx: (Math.random() - 0.5) * 120, vy: -80, tier: coin.tier,
-          rot: coin.rot, vrot: (Math.random() - 0.5) * 10,
+          rot: 0, vrot: 0, spin: Math.random() * Math.PI * 2,
           value: coin.value, applied: coin.applied.slice(),
         });
       }
@@ -132,7 +133,7 @@ function pusherBar(sh) {
   const width = sh.x2 - sh.x1;
   const stroke = width * P.strokeFrac;
   const phase = ((_time + sh.index * 0.4) % P.period) / P.period;
-  const PUSH = 0.5; // mitad de ciclo empujando, mitad retrayéndose
+  const PUSH = P.pushFrac || 0.6; // fracción del ciclo empujando (resto: se retrae)
   let ext, pushing;
   if (phase < PUSH) { ext = phase / PUSH; pushing = true; }
   else { ext = 1 - (phase - PUSH) / (1 - PUSH); pushing = false; }
@@ -142,28 +143,23 @@ function pusherBar(sh) {
   return { base, frontX, dir: sh.dir, pushing, speed, stroke, phase };
 }
 
-// Colisión de la barra del empujador con las monedas apoyadas en su plataforma.
+// Colisión de la barra del empujador con las monedas: SOLO empuja las que su CARA
+// toca de verdad (no a distancia). La cara barre la plataforma y contacta cada
+// moneda cuando llega a ella; el resto avanza por colisión moneda-moneda.
 function pushBarCollide(sh, R) {
   const bar = pusherBar(sh);
   if (!bar.pushing) return;                         // al retraerse no arrastra
-  const dir = bar.dir;
-  const barH = R * 3.4;                             // alto de la barra (atrapa montañas)
+  const dir = bar.dir, fw = 5;                       // media anchura de la cara
+  const barH = R * 3.2;                              // alto de la cara (atrapa montañas)
   const yTop = sh.y - barH, yBot = sh.y + R;
+  const face = bar.frontX;
   for (const c of coins) {
     if (c.y < yTop || c.y > yBot) continue;          // fuera del alto de la barra
     if (c.x < sh.x1 - R || c.x > sh.x2 + R) continue; // fuera de la plataforma
-    if (dir > 0) {
-      // Barra sólida de [base, frontX]; empuja lo que quede dentro hacia delante.
-      if (c.x > bar.base - R && c.x < bar.frontX + R) {
-        c.x = bar.frontX + R;
-        if (c.vx < bar.speed) c.vx = bar.speed;
-      }
-    } else {
-      if (c.x < bar.base + R && c.x > bar.frontX - R) {
-        c.x = bar.frontX - R;
-        if (c.vx > -bar.speed) c.vx = -bar.speed;
-      }
-    }
+    // ¿la moneda solapa la cara del empujador? (contacto real)
+    if (c.x + R <= face - fw || c.x - R >= face + fw) continue;
+    if (dir > 0) { c.x = face + fw + R; if (c.vx < bar.speed) c.vx = bar.speed; }
+    else { c.x = face - fw - R; if (c.vx > -bar.speed) c.vx = -bar.speed; }
   }
 }
 

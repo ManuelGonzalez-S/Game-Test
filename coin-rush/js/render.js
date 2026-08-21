@@ -310,25 +310,23 @@ const Render = (() => {
   function drawCoins() {
     const coins = getCoins();
     const R = GAME.physics.coinR, T = GAME.physics.coinThick;
+    // Moneda TUMBADA (cara arriba): elipse achatada fija con grosor 3D bajo la
+    // cara; el valor se lee siempre, sin ponerse de canto.
+    const ry = R * 0.8, off = T;
     for (const c of coins) {
       const t = GAME.coinTiers[Math.min(c.tier, GAME.coinTiers.length - 1)];
-      const cosr = Math.cos(c.rot), sinr = Math.sin(c.rot);
-      const ry = Math.max(1.2, R * Math.abs(cosr));
-      const off = T * Math.abs(sinr) * 1.5;
       ctx.save(); ctx.translate(c.x, c.y);
-      // sombra de contacto suave, desplazada
-      ctx.fillStyle = 'rgba(0,0,0,0.28)';
-      ctx.beginPath(); ctx.ellipse(2, R * 1.02, R * 0.82, R * 0.2, 0, 0, Math.PI * 2); ctx.fill();
-      // canto (grosor 3D con estrías y sombreado)
-      if (off > 0.6) {
-        const eg = ctx.createLinearGradient(-R, 0, R, 0);
-        eg.addColorStop(0, shade(t.color, 0.35)); eg.addColorStop(0.5, shade(t.color, 0.62)); eg.addColorStop(1, shade(t.color, 0.32));
-        ctx.fillStyle = eg;
-        ctx.beginPath(); ctx.rect(-R, 0, 2 * R, off); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(0, off, R, ry, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1;
-        for (let x = -R + 3; x < R - 1; x += 4) { ctx.beginPath(); ctx.moveTo(x, 1); ctx.lineTo(x, off - 1); ctx.stroke(); }
-      }
+      // sombra de contacto suave
+      ctx.fillStyle = 'rgba(0,0,0,0.26)';
+      ctx.beginPath(); ctx.ellipse(2, ry + off + 1, R * 0.82, R * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+      // canto (grosor 3D con estrías)
+      const eg = ctx.createLinearGradient(-R, 0, R, 0);
+      eg.addColorStop(0, shade(t.color, 0.32)); eg.addColorStop(0.5, shade(t.color, 0.6)); eg.addColorStop(1, shade(t.color, 0.3));
+      ctx.fillStyle = eg;
+      ctx.beginPath(); ctx.rect(-R, 0, 2 * R, off); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, off, R, ry, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1;
+      for (let x = -R + 3; x < R - 1; x += 4) { ctx.beginPath(); ctx.moveTo(x, 1); ctx.lineTo(x, off - 1); ctx.stroke(); }
       // cara — metálico radial con luz cenital
       const g = ctx.createRadialGradient(-R * 0.32, -ry * 0.42, R * 0.12, 0, 0, R * 1.15);
       g.addColorStop(0, t.glow); g.addColorStop(0.42, t.color);
@@ -343,17 +341,12 @@ const Render = (() => {
       // brillo especular
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.beginPath(); ctx.ellipse(-R * 0.34, -ry * 0.42, R * 0.24, ry * 0.26, -0.5, 0, Math.PI * 2); ctx.fill();
-      // valor acuñado (relieve)
-      if (Math.abs(cosr) > 0.55) {
-        const label = formatNumber(c.value);
-        ctx.save(); ctx.scale(1, Math.abs(cosr));
-        ctx.font = '800 ' + (label.length > 4 ? 10 : 13) + 'px Sora, Inter, sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.globalAlpha = (Math.abs(cosr) - 0.55) / 0.45;
-        ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillText(label, 0, -0.8); // realce superior
-        ctx.fillStyle = shade(t.color, 0.4); ctx.fillText(label, 0, 0);       // relieve grabado
-        ctx.globalAlpha = 1; ctx.restore();
-      }
+      // valor acuñado (relieve) — siempre visible y en horizontal
+      const label = formatNumber(c.value);
+      ctx.font = '800 ' + (label.length > 4 ? 10 : 13) + 'px Sora, Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,0.42)'; ctx.fillText(label, 0, -0.8); // realce
+      ctx.fillStyle = shade(t.color, 0.38); ctx.fillText(label, 0, 0.4);      // grabado
       ctx.restore();
     }
   }
