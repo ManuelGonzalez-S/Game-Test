@@ -3,7 +3,7 @@
 
 const Render = (() => {
   let canvas, ctx, W = 0, H = 0, dpr = 1, tick = 0;
-  const floats = [], rings = [];
+  const floats = [], rings = [], parts = [];
   let vaultPulse = 0, pile = 0;
   const MINT = '#35e0a1', STEEL = '#9fb2cc';
 
@@ -31,8 +31,23 @@ const Render = (() => {
       floats.push({ x: e.x, y: e.y, text: '+' + formatNumber(e.value), color: GAME.coinTiers[e.tier].glow, life: 1 });
       rings.push({ x: e.x, y: e.y, r: 8, life: 1 });
       vaultPulse = 1; pile = Math.min(1, pile + 0.12);
+      // chispas doradas
+      for (let i = 0; i < 4; i++) parts.push({
+        x: e.x, y: e.y, vx: (Math.random() - 0.5) * 90, vy: -40 - Math.random() * 80,
+        life: 1, decay: 0.03 + Math.random() * 0.02, size: 2 + Math.random() * 2,
+        color: GAME.coinTiers[Math.min(e.tier, GAME.coinTiers.length - 1)].glow,
+      });
+      if (typeof Sound !== 'undefined') Sound.coin();
     }
     pile *= 0.985;
+    while (typeof moverEvents !== 'undefined' && moverEvents.length) {
+      const e = moverEvents.shift();
+      if (typeof Sound !== 'undefined') Sound.sweep();
+      for (let i = 0; i < 5; i++) parts.push({
+        x: e.x + e.dir * 10, y: e.y - 8 - Math.random() * 8, vx: e.dir * (30 + Math.random() * 60), vy: -Math.random() * 40,
+        life: 1, decay: 0.04 + Math.random() * 0.03, size: 1.5 + Math.random() * 1.5, color: 'rgba(180,190,210,0.9)',
+      });
+    }
   }
 
   function draw() {
@@ -114,6 +129,13 @@ const Render = (() => {
       roundRect(dir > 0 ? baseX - 4 : bx, y - th / 2 - 12, Math.abs(bx - baseX) + 8, th + 12, 3); ctx.fill();
       ctx.fillStyle = '#e08a5c'; roundRect(bx - (dir > 0 ? 0 : 8), y - th / 2 - 14, 8, th + 16, 3); ctx.fill();
     }
+    // etiqueta del tipo de máquina (bajo el extremo cerrado)
+    const names = { belt: 'CINTA', fan: 'VENTILADOR', pusher: 'EMPUJADOR' };
+    ctx.font = '700 8px Inter, sans-serif';
+    ctx.textAlign = dir > 0 ? 'left' : 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(147,159,183,0.6)';
+    ctx.fillText(names[sh.mover] || '', dir > 0 ? x + 4 : x + w - 4, y + 8);
   }
   function roller(cx, cy) {
     const g = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, 7);
@@ -224,6 +246,15 @@ const Render = (() => {
   }
 
   function drawFx() {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.vy += 240 * 0.016; p.x += p.vx * 0.016; p.y += p.vy * 0.016; p.life -= p.decay;
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+      if (p.life <= 0) parts.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
     for (let i = rings.length - 1; i >= 0; i--) {
       const r = rings[i]; r.r += 3; r.life -= 0.05;
       ctx.globalAlpha = Math.max(0, r.life); ctx.strokeStyle = MINT; ctx.lineWidth = 2;

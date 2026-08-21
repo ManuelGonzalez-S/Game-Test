@@ -23,15 +23,15 @@ const GAME = {
     gravity: 1300,       // px/seg² de caída
     coinR: 12,           // radio de la moneda
     coinThick: 6,        // grosor 3D visual
-    maxCoins: 110,       // tope de monedas simultáneas (rendimiento/estabilidad)
+    maxCoins: 130,       // tope de monedas simultáneas (rendimiento/estabilidad)
   },
 
   // Máquinas de movimiento (en el extremo cerrado de cada plataforma).
   // La fuerza escala con la mejora "Velocidad" y habilidades.
   movers: {
-    belt:   { name: 'Cinta',      beltV: 46 },   // arrastre constante hacia el hueco
+    belt:   { name: 'Cinta',      beltV: 40 },   // arrastre constante hacia el hueco
     fan:    { name: 'Ventilador', accel: 640 },  // ráfaga (acel. horizontal, pulsada)
-    pusher: { name: 'Empujador',  impulse: 120, period: 1.5 }, // empujón periódico
+    pusher: { name: 'Empujador',  impulse: 150, period: 2.3 }, // barrido en tandas (montañas)
   },
   moverPool: (t) => (t >= 3 ? ['pusher', 'belt', 'fan'] : t >= 2 ? ['belt', 'pusher', 'fan'] : ['belt', 'pusher']),
 

@@ -15,7 +15,7 @@ function defaultState() {
     skills: {},          // id -> true
     rate: 0,             // EMA de dinero/seg (para offline)
     lastSeen: Date.now(),
-    soundEnabled: true,
+    soundEnabled: false, // el usuario lo activa (evita autoplay molesto)
     version: 1,
   };
 }
