@@ -5,13 +5,16 @@ const Render = (() => {
   let canvas, ctx, W = 0, H = 0, dpr = 1, tick = 0;
   const floats = [], rings = [], parts = [];
   let vaultPulse = 0, pile = 0;
-  const MINT = '#35e0a1', STEEL = '#9fb2cc';
+  // Paleta "casino real": oro cálido, latón, madera, fieltro.
+  const GOLD = '#e6c877', GOLD_HI = '#f6e6ac', BRASS = '#b98b3e', BRASS_DK = '#6e4f22';
+  const WOOD = '#4a3320', WOOD_DK = '#2c1d10', FELT = '#0c2417', FELT_HI = '#134a2c';
+  const STEEL = '#9fb2cc';
 
   function init(cv) {
     canvas = cv;
     ctx = canvas.getContext('2d');
-    Icons.image('vault', MINT, 2.2);
-    for (const k in GAME.stations) { const s = GAME.stations[k]; Icons.image(s.ico, s.color, 2.4); }
+    Icons.image('vault', GOLD, 2.2);
+    for (const k in GAME.stations) { const s = GAME.stations[k]; Icons.image(s.ico, GOLD_HI, 2.4); }
     resize();
     if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(canvas);
   }
@@ -21,14 +24,19 @@ const Render = (() => {
     W = Math.max(200, r.width); H = Math.max(200, r.height);
     canvas.width = Math.floor(W * dpr); canvas.height = Math.floor(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    Route.set(W, H);
+    // Reserva el alto real del HUD flotante (barra superior y dock) para que la
+    // tolva y el cofre no queden tapados.
+    const tb = document.getElementById('topbar'), dk = document.getElementById('dock');
+    const insetTop = tb ? tb.offsetHeight : 120;
+    const insetBot = dk ? dk.offsetHeight : 180;
+    Route.set(W, H, insetTop, insetBot);
   }
   function size() { return { W, H }; }
 
   function consumeBankEvents() {
     while (bankEvents.length) {
       const e = bankEvents.shift();
-      floats.push({ x: e.x, y: e.y, text: '+' + formatNumber(e.value), color: GAME.coinTiers[e.tier].glow, life: 1 });
+      floats.push({ x: e.x, y: e.y, text: '+' + formatNumber(e.value), color: GOLD_HI, life: 1 });
       rings.push({ x: e.x, y: e.y, r: 8, life: 1 });
       vaultPulse = 1; pile = Math.min(1, pile + 0.12);
       // chispas doradas
@@ -62,185 +70,283 @@ const Render = (() => {
     for (const st of m.stations) drawStation(st);
     drawDispenser(m);
     drawCoins();
+    for (const sh of m.shelves) drawShelfTag(sh);
     drawFx();
   }
 
-  function drawShaft(m) {
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    roundRect(m.wallL - 6, m.top - 22, 6, m.bankY - m.top + 46, 3); ctx.fill();
-    roundRect(m.wallR, m.top - 22, 6, m.bankY - m.top + 46, 3); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.022)';
-    for (let y = m.top; y < m.bankY; y += 26) for (let x = m.wallL + 14; x < m.wallR; x += 26) {
-      ctx.beginPath(); ctx.arc(x, y, 0.8, 0, Math.PI * 2); ctx.fill();
+  // Etiqueta de mejora de cada plataforma ($precio · Nv), tipo máquina de arcade.
+  function drawShelfTag(sh) {
+    const lvl = shelfLevel(sh.index);
+    const cost = shelfUpCost(sh.index);
+    const afford = canBuyShelf(sh.index);
+    const label = '$' + formatNumber(cost);
+    ctx.font = '800 15px Sora, Inter, sans-serif';
+    const tw = ctx.measureText(label).width;
+    const padX = 11, h = 28, w = tw + padX * 2;
+    const cx = sh.tag.x, cy = sh.tag.y;
+    let x = cx - w / 2;
+    x = Math.max(sh.x1, Math.min(sh.x2 - w, x)); // dentro de la plataforma
+    const y = cy - h / 2;
+    sh._tagRect = { x, y, w, h };                 // para el hit-test del tap
+    // placa: latón encendido si es asequible, bronce apagado si no
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; roundRect(x + 1.5, y + 2.5, w, h, 7); ctx.fill();
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    if (afford) { g.addColorStop(0, GOLD_HI); g.addColorStop(0.5, GOLD); g.addColorStop(1, BRASS); }
+    else { g.addColorStop(0, '#4a3a24'); g.addColorStop(1, '#2c2114'); }
+    roundRect(x, y, w, h, 7); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = afford ? 'rgba(255,255,255,0.35)' : 'rgba(185,139,62,0.35)';
+    ctx.lineWidth = 1.1; ctx.stroke();
+    // precio grabado
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = afford ? '#3a2606' : '#8a7c62';
+    ctx.fillText(label, x + w / 2, y + h / 2 + 0.5);
+    // nivel (sello encima a la derecha)
+    if (lvl > 0) {
+      const lt = 'Nv.' + lvl;
+      ctx.font = '800 11px Sora, Inter, sans-serif';
+      const ltw = ctx.measureText(lt).width + 10;
+      const lx = x + w - ltw / 2, ly = y - 6;
+      ctx.fillStyle = WOOD; roundRect(lx - ltw / 2, ly - 9, ltw, 16, 7); ctx.fill();
+      ctx.strokeStyle = BRASS; ctx.lineWidth = 1; roundRect(lx - ltw / 2, ly - 9, ltw, 16, 7); ctx.stroke();
+      ctx.fillStyle = GOLD_HI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(lt, lx, ly - 1);
     }
   }
 
+  function drawShaft(m) {
+    // Tapete de fieltro con luz cenital suave y viñeta.
+    const g = ctx.createRadialGradient(W / 2, H * 0.28, 40, W / 2, H * 0.5, H * 0.85);
+    g.addColorStop(0, FELT_HI); g.addColorStop(0.55, FELT); g.addColorStop(1, '#071a11');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // Trama de fieltro (puntitos tenues).
+    ctx.fillStyle = 'rgba(255,255,255,0.014)';
+    for (let y = m.top - 20; y < m.bankY + 30; y += 9) {
+      const off = (y / 9) % 2 ? 4.5 : 0;
+      for (let x = m.wallL + off; x < m.wallR; x += 9) {
+        ctx.beginPath(); ctx.arc(x, y, 0.7, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    // Rieles laterales de madera con filo de latón.
+    woodRail(m.wallL - 9, m.top - 24, 9, m.bankY - m.top + 50);
+    woodRail(m.wallR, m.top - 24, 9, m.bankY - m.top + 50);
+  }
+  function woodRail(x, y, w, h) {
+    const g = ctx.createLinearGradient(x, 0, x + w, 0);
+    g.addColorStop(0, WOOD_DK); g.addColorStop(0.5, WOOD); g.addColorStop(1, WOOD_DK);
+    roundRect(x, y, w, h, 4); ctx.fillStyle = g; ctx.fill();
+    ctx.fillStyle = 'rgba(214,178,94,0.22)';
+    roundRect(x + (w > 6 ? 1 : 0), y, 1.6, h, 1); ctx.fill();
+  }
+
   function drawShelf(m, sh) {
-    const th = 11, x = sh.x1, w = sh.x2 - sh.x1, y = sh.y;
-    // sombra
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; roundRect(x + 2, y - th / 2 + 4, w, th, 5); ctx.fill();
-    // cuerpo
+    const th = 18, x = sh.x1, w = sh.x2 - sh.x1, y = sh.y;
+    // sombra proyectada suave sobre el tapete
+    ctx.fillStyle = 'rgba(0,0,0,0.28)'; roundRect(x + 3, y - th / 2 + 6, w, th, 5); ctx.fill();
+    // cuerpo de acero cepillado
     const g = ctx.createLinearGradient(0, y - th / 2, 0, y + th / 2);
-    g.addColorStop(0, '#3a4658'); g.addColorStop(0.5, '#28323f'); g.addColorStop(1, '#19212b');
+    g.addColorStop(0, '#5b6675'); g.addColorStop(0.5, '#39424e'); g.addColorStop(1, '#20262e');
     roundRect(x, y - th / 2, w, th, 5); ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 1; ctx.stroke();
-    // lip en el borde abierto
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+    // reflejo cepillado
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + 3, y - th / 2 + 2); ctx.lineTo(x + w - 3, y - th / 2 + 2); ctx.stroke();
+    // tornillos en los extremos
+    screw(x + 6, y); screw(x + w - 6, y);
+    // reborde de latón en el extremo abierto (por donde caen)
     const lipX = sh.dir > 0 ? sh.x2 : sh.x1;
-    ctx.fillStyle = '#4a586b';
-    roundRect(lipX - 3, y - th / 2 - 5, 6, 7, 2); ctx.fill();
+    const lg = ctx.createLinearGradient(0, y - th / 2 - 6, 0, y + 2);
+    lg.addColorStop(0, GOLD); lg.addColorStop(1, BRASS_DK);
+    ctx.fillStyle = lg; roundRect(lipX - 3, y - th / 2 - 6, 6, 9, 2); ctx.fill();
     drawMover(sh, x, y, w, th);
+  }
+  function screw(cx, cy) {
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(cx, cy, 2.1, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(cx - 1.4, cy); ctx.lineTo(cx + 1.4, cy); ctx.stroke();
   }
 
   function drawMover(sh, x, y, w, th) {
     const dir = sh.dir;
     if (sh.mover === 'belt') {
-      // tread en movimiento sobre la superficie
+      // banda de goma oscura con nervaduras en movimiento
       ctx.save();
       roundRect(x, y - th / 2, w, th, 5); ctx.clip();
-      ctx.strokeStyle = 'rgba(159,178,204,0.5)'; ctx.lineWidth = 2.5;
-      const off = (tick * dir * 1.6) % 16;
-      for (let sx = x - 16 + off; sx < x + w + 16; sx += 16) {
-        ctx.beginPath(); ctx.moveTo(sx, y - th / 2 + 2); ctx.lineTo(sx - 5 * dir, y + th / 2 - 2); ctx.stroke();
+      const bg = ctx.createLinearGradient(0, y - th / 2, 0, y + th / 2);
+      bg.addColorStop(0, '#2b2b30'); bg.addColorStop(0.5, '#161619'); bg.addColorStop(1, '#0c0c0e');
+      ctx.fillStyle = bg; ctx.fillRect(x, y - th / 2, w, th);
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 2;
+      const off = (tick * dir * 1.4) % 14;
+      for (let sx = x - 14 + off; sx < x + w + 14; sx += 14) {
+        ctx.beginPath(); ctx.moveTo(sx, y - th / 2); ctx.lineTo(sx - 4 * dir, y + th / 2); ctx.stroke();
       }
+      ctx.strokeStyle = 'rgba(230,200,119,0.10)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, y - th / 2 + 1.5); ctx.lineTo(x + w, y - th / 2 + 1.5); ctx.stroke();
       ctx.restore();
       roller(x, y); roller(x + w, y);
     } else if (sh.mover === 'fan') {
-      const cx = dir > 0 ? x + 16 : x + w - 16;
-      const cy = y - 16;
-      // caja
-      ctx.fillStyle = '#20293a'; roundRect(cx - 13, cy - 13, 26, 26, 6); ctx.fill();
-      ctx.strokeStyle = 'rgba(53,224,161,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
-      // aspas girando
-      ctx.save(); ctx.translate(cx, cy); ctx.rotate(tick * 0.35 * dir);
-      ctx.fillStyle = '#8fe3c8';
+      const cx = dir > 0 ? x + 22 : x + w - 22;
+      const cy = y - 22;
+      // caja de latón
+      const bg = ctx.createLinearGradient(0, cy - 17, 0, cy + 17);
+      bg.addColorStop(0, BRASS); bg.addColorStop(1, BRASS_DK);
+      ctx.fillStyle = bg; roundRect(cx - 17, cy - 17, 34, 34, 8); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.6; ctx.stroke();
+      // aspas girando (metal claro)
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(tick * 0.32 * dir);
+      ctx.fillStyle = '#d7dbe2';
       for (let a = 0; a < 4; a++) {
         ctx.rotate(Math.PI / 2);
-        ctx.beginPath(); ctx.ellipse(4, 0, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(5, 0, 9, 4, 0, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
-      ctx.fillStyle = '#1a2230'; ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
     } else if (sh.mover === 'pusher') {
-      const P = GAME.movers.pusher;
-      const phase = (tick * 0.016 % P.period) / P.period;
-      const ext = phase < 0.45 ? (phase / 0.45) : (1 - (phase - 0.45) / 0.55);
-      const baseX = dir > 0 ? x : x + w;
-      const bx = baseX + dir * (6 + ext * 26);
-      ctx.fillStyle = '#c26b4a';
-      roundRect(dir > 0 ? baseX - 4 : bx, y - th / 2 - 12, Math.abs(bx - baseX) + 8, th + 12, 3); ctx.fill();
-      ctx.fillStyle = '#e08a5c'; roundRect(bx - (dir > 0 ? 0 : 8), y - th / 2 - 14, 8, th + 16, 3); ctx.fill();
+      // Barra física con pistón: misma posición que el motor de físicas.
+      const bar = pusherBar(sh);
+      const barH = th + 24;
+      const yTop = y - th / 2 - 18;
+      const backX = bar.base, frontX = bar.frontX;
+      const bx = Math.min(backX, frontX), bw = Math.abs(frontX - backX);
+      // vástago (pistón metálico)
+      const sg = ctx.createLinearGradient(0, y - th / 2 - 4, 0, y + 4);
+      sg.addColorStop(0, '#8a8f98'); sg.addColorStop(1, '#3a3e45');
+      ctx.fillStyle = sg; roundRect(bx, y - th / 2 - 4, bw, th + 4, 3); ctx.fill();
+      // cabeza que empuja (acero con canto de latón)
+      const hx = frontX - (dir > 0 ? 0 : 10);
+      const hg = ctx.createLinearGradient(hx, 0, hx + 10, 0);
+      hg.addColorStop(0, '#c6ccd6'); hg.addColorStop(1, '#6c727b');
+      ctx.fillStyle = hg; roundRect(hx, yTop, 10, barH, 3); ctx.fill();
+      ctx.fillStyle = bar.pushing ? GOLD : BRASS_DK;
+      roundRect(dir > 0 ? hx + 8 : hx, yTop, 2, barH, 1); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; roundRect(hx, yTop, 10, barH, 3); ctx.stroke();
     }
-    // etiqueta del tipo de máquina (bajo el extremo cerrado)
+    // placa con el tipo de máquina (grabada, bajo el extremo cerrado)
     const names = { belt: 'CINTA', fan: 'VENTILADOR', pusher: 'EMPUJADOR' };
     ctx.font = '700 8px Inter, sans-serif';
     ctx.textAlign = dir > 0 ? 'left' : 'right';
     ctx.textBaseline = 'top';
-    ctx.fillStyle = 'rgba(147,159,183,0.6)';
-    ctx.fillText(names[sh.mover] || '', dir > 0 ? x + 4 : x + w - 4, y + 8);
+    ctx.fillStyle = 'rgba(230,200,119,0.42)';
+    ctx.fillText(names[sh.mover] || '', dir > 0 ? x + 4 : x + w - 4, y + 9);
   }
   function roller(cx, cy) {
-    const g = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, 7);
-    g.addColorStop(0, '#c7d3e4'); g.addColorStop(1, '#556274');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(cx, cy, 2.2, 0, Math.PI * 2); ctx.fill();
+    const g = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, 10);
+    g.addColorStop(0, GOLD_HI); g.addColorStop(0.5, BRASS); g.addColorStop(1, BRASS_DK);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
   }
 
   function drawStation(st) {
-    const def = GAME.stations[st.type];
     const pulse = st.pulse || 0;
     const x = st.pos.x, y = st.pos.y;
     if (pulse > 0.02) {
-      ctx.globalAlpha = pulse * 0.5; ctx.fillStyle = def.color;
+      ctx.globalAlpha = pulse * 0.45; ctx.fillStyle = GOLD;
       ctx.beginPath(); ctx.arc(x, y, 24, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
     }
-    const s = 34 + pulse * 6;
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; roundRect(x - s / 2 + 2, y - s / 2 + 3, s, s, 10); ctx.fill();
+    const s = 44 + pulse * 7;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(x - s / 2 + 2, y - s / 2 + 3, s, s, 12); ctx.fill();
+    // ficha de cuero/madera oscura con bisel de latón
     const g = ctx.createLinearGradient(0, y - s / 2, 0, y + s / 2);
-    g.addColorStop(0, '#222c3a'); g.addColorStop(1, '#161d27');
-    roundRect(x - s / 2, y - s / 2, s, s, 10); ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = def.color; ctx.lineWidth = 2; ctx.globalAlpha = 0.85; ctx.stroke(); ctx.globalAlpha = 1;
-    drawIcon(def.ico, def.color, x, y, 20);
+    g.addColorStop(0, '#2a2016'); g.addColorStop(1, '#160f09');
+    roundRect(x - s / 2, y - s / 2, s, s, 12); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = BRASS; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.strokeStyle = 'rgba(246,230,172,0.25)'; ctx.lineWidth = 1;
+    roundRect(x - s / 2 + 3, y - s / 2 + 3, s - 6, s - 6, 9); ctx.stroke();
+    drawIcon(GAME.stations[st.type].ico, GOLD_HI, x, y, 26);
     st.pulse = pulse * 0.86;
   }
 
   function drawDispenser(m) {
-    const x = m.spawn.x, y = m.spawn.y, w = 46, hh = 30;
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; roundRect(x - w / 2 + 2, y - hh + 5, w, hh, 8); ctx.fill();
+    const x = m.spawn.x, y = m.spawn.y, w = 62, hh = 40;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(x - w / 2 + 2, y - hh + 5, w, hh, 8); ctx.fill();
+    // tolva de latón
     const g = ctx.createLinearGradient(0, y - hh, 0, y);
-    g.addColorStop(0, '#3a3f2a'); g.addColorStop(1, '#242a18');
+    g.addColorStop(0, BRASS); g.addColorStop(0.6, '#8f6a2e'); g.addColorStop(1, BRASS_DK);
     roundRect(x - w / 2, y - hh, w, hh, 8); ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = 'rgba(255,198,75,0.5)'; ctx.lineWidth = 1.4; ctx.stroke();
-    ctx.fillStyle = '#0e141b';
-    ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y);
-    ctx.lineTo(x + 6, y + 9); ctx.lineTo(x - 6, y + 9); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.strokeStyle = 'rgba(246,230,172,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - w / 2 + 4, y - hh + 3); ctx.lineTo(x + w / 2 - 4, y - hh + 3); ctx.stroke();
+    // boca de salida
+    ctx.fillStyle = '#120c06';
+    ctx.beginPath(); ctx.moveTo(x - 14, y); ctx.lineTo(x + 14, y);
+    ctx.lineTo(x + 8, y + 11); ctx.lineTo(x - 8, y + 11); ctx.closePath(); ctx.fill();
     // moneditas decorativas dentro
-    ctx.fillStyle = GAME.coinTiers[0].color;
-    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x - 8 + i * 8, y - hh / 2, 4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = GAME.coinTiers[2].color;
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x - 11 + i * 11, y - hh / 2, 5, 0, Math.PI * 2); ctx.fill(); }
   }
 
   function drawVault(m) {
-    const w = Math.min(190, m.W * 0.66), hh = 52 + vaultPulse * 6;
-    const x = m.W / 2 - w / 2, y = m.bankY - 8;
+    const w = Math.min(280, m.W * 0.74), hh = 66 + vaultPulse * 6;
+    const x = m.W / 2 - w / 2, y = m.bankY - 12;
     if (vaultPulse > 0.02) {
-      ctx.globalAlpha = vaultPulse * 0.4; ctx.fillStyle = MINT;
-      roundRect(x - 8, y - 8, w + 16, hh + 16, 18); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.globalAlpha = vaultPulse * 0.35; ctx.fillStyle = GOLD;
+      roundRect(x - 8, y - 8, w + 16, hh + 16, 16); ctx.fill(); ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(x + 2, y + 4, w, hh, 14); ctx.fill();
+    // cofre de madera
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; roundRect(x + 3, y + 5, w, hh, 12); ctx.fill();
     const g = ctx.createLinearGradient(0, y, 0, y + hh);
-    g.addColorStop(0, '#1e2b28'); g.addColorStop(1, '#141d1a');
-    roundRect(x, y, w, hh, 14); ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = 'rgba(53,224,161,0.6)'; ctx.lineWidth = 2; ctx.stroke();
-    // pila de monedas creciente
-    const heap = 3 + Math.round(pile * 9);
+    g.addColorStop(0, WOOD); g.addColorStop(1, WOOD_DK);
+    roundRect(x, y, w, hh, 12); ctx.fillStyle = g; ctx.fill();
+    // herrajes de latón (bandas verticales + marco)
+    ctx.strokeStyle = BRASS; ctx.lineWidth = 2; roundRect(x, y, w, hh, 12); ctx.stroke();
+    ctx.fillStyle = 'rgba(185,139,62,0.55)';
+    for (const bx of [x + w * 0.2, x + w * 0.8 - 4]) roundRect(bx, y + 2, 4, hh - 4, 2), ctx.fill();
+    // pila de monedas creciente (oro/plata)
+    const heap = 5 + Math.round(pile * 12);
     for (let i = 0; i < heap; i++) {
-      const rx = m.W / 2 + (Math.sin(i * 2.3) * w * 0.32);
-      const ry = y + hh - 8 - (i % 4) * 5;
-      ctx.fillStyle = i % 3 ? GAME.coinTiers[0].color : GAME.coinTiers[2].color;
-      ctx.beginPath(); ctx.ellipse(rx, ry, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+      const rx = m.W / 2 + (Math.sin(i * 2.3) * w * 0.36);
+      const ry = y + hh - 11 - (i % 4) * 6;
+      const t = i % 3 ? GAME.coinTiers[2] : GAME.coinTiers[1];
+      ctx.fillStyle = t.color;
+      ctx.beginPath(); ctx.ellipse(rx, ry, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.beginPath(); ctx.ellipse(rx - 2, ry - 1.4, 3, 1.5, 0, 0, Math.PI * 2); ctx.fill();
     }
-    drawIcon('vault', MINT, m.W / 2, y + 16, 22);
+    // placa de latón con el icono del cofre
+    drawIcon('vault', GOLD_HI, m.W / 2, y + 18, 28);
     vaultPulse *= 0.86;
   }
 
   function drawCoins() {
     const coins = getCoins();
     const R = GAME.physics.coinR, T = GAME.physics.coinThick;
+    // Moneda TUMBADA (cara arriba): elipse achatada fija con grosor 3D bajo la
+    // cara; el valor se lee siempre, sin ponerse de canto.
+    const ry = R * 0.8, off = T;
     for (const c of coins) {
       const t = GAME.coinTiers[Math.min(c.tier, GAME.coinTiers.length - 1)];
-      const cosr = Math.cos(c.rot), sinr = Math.sin(c.rot);
-      const ry = Math.max(1.2, R * Math.abs(cosr));
-      const off = T * Math.abs(sinr) * 1.5;
       ctx.save(); ctx.translate(c.x, c.y);
-      // sombra
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
-      ctx.beginPath(); ctx.ellipse(0, R * 0.98, R * 0.78, R * 0.18, 0, 0, Math.PI * 2); ctx.fill();
-      // canto (3D)
-      if (off > 0.6) {
-        ctx.fillStyle = shade(t.color, 0.5);
-        ctx.beginPath(); ctx.rect(-R, 0, 2 * R, off); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(0, off, R, ry, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1;
-        for (let x = -R + 3; x < R - 1; x += 5) { ctx.beginPath(); ctx.moveTo(x, 1); ctx.lineTo(x, off - 1); ctx.stroke(); }
-      }
-      // cara
-      const g = ctx.createLinearGradient(-R, -ry, R, ry);
-      g.addColorStop(0, t.glow); g.addColorStop(0.5, t.color); g.addColorStop(1, shade(t.color, 0.8));
+      // sombra de contacto suave
+      ctx.fillStyle = 'rgba(0,0,0,0.26)';
+      ctx.beginPath(); ctx.ellipse(2, ry + off + 1, R * 0.82, R * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+      // canto (grosor 3D con estrías)
+      const eg = ctx.createLinearGradient(-R, 0, R, 0);
+      eg.addColorStop(0, shade(t.color, 0.32)); eg.addColorStop(0.5, shade(t.color, 0.6)); eg.addColorStop(1, shade(t.color, 0.3));
+      ctx.fillStyle = eg;
+      ctx.beginPath(); ctx.rect(-R, 0, 2 * R, off); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, off, R, ry, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1;
+      for (let x = -R + 3; x < R - 1; x += 4) { ctx.beginPath(); ctx.moveTo(x, 1); ctx.lineTo(x, off - 1); ctx.stroke(); }
+      // cara — metálico radial con luz cenital
+      const g = ctx.createRadialGradient(-R * 0.32, -ry * 0.42, R * 0.12, 0, 0, R * 1.15);
+      g.addColorStop(0, t.glow); g.addColorStop(0.42, t.color);
+      g.addColorStop(0.82, shade(t.color, 0.78)); g.addColorStop(1, shade(t.color, 0.55));
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, R, ry, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.ellipse(0, 0, R * 0.68, ry * 0.68, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.beginPath(); ctx.ellipse(-R * 0.3, -ry * 0.4, R * 0.26, ry * 0.3, -0.5, 0, Math.PI * 2); ctx.fill();
-      // valor
-      if (Math.abs(cosr) > 0.55) {
-        const label = formatNumber(c.value);
-        ctx.save(); ctx.scale(1, Math.abs(cosr));
-        ctx.font = '800 ' + (label.length > 4 ? 8 : 10) + 'px Sora, Inter, sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.globalAlpha = (Math.abs(cosr) - 0.55) / 0.45;
-        ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeText(label, 0, 0);
-        ctx.fillStyle = '#2a1c05'; ctx.fillText(label, 0, 0);
-        ctx.globalAlpha = 1; ctx.restore();
-      }
+      // bisel exterior (aro grabado)
+      ctx.lineWidth = 1.6; ctx.strokeStyle = shade(t.color, 0.42); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(0, 0, R * 0.82, ry * 0.82, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,0.14)';
+      ctx.beginPath(); ctx.ellipse(0, 0, R * 0.66, ry * 0.66, 0, 0, Math.PI * 2); ctx.stroke();
+      // brillo especular
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath(); ctx.ellipse(-R * 0.34, -ry * 0.42, R * 0.24, ry * 0.26, -0.5, 0, Math.PI * 2); ctx.fill();
+      // valor acuñado (relieve) — siempre visible y en horizontal
+      const label = formatNumber(c.value);
+      ctx.font = '800 ' + (label.length > 4 ? 10 : 13) + 'px Sora, Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,0.42)'; ctx.fillText(label, 0, -0.8); // realce
+      ctx.fillStyle = shade(t.color, 0.38); ctx.fillText(label, 0, 0.4);      // grabado
       ctx.restore();
     }
   }
@@ -257,7 +363,7 @@ const Render = (() => {
     ctx.globalAlpha = 1;
     for (let i = rings.length - 1; i >= 0; i--) {
       const r = rings[i]; r.r += 3; r.life -= 0.05;
-      ctx.globalAlpha = Math.max(0, r.life); ctx.strokeStyle = MINT; ctx.lineWidth = 2;
+      ctx.globalAlpha = Math.max(0, r.life); ctx.strokeStyle = GOLD; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.stroke();
       if (r.life <= 0) rings.splice(i, 1);
     }

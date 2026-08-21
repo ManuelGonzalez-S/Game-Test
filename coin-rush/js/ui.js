@@ -2,10 +2,7 @@
 
 const UI = (() => {
   const el = {};
-  let _swapIndex = -1;
   let _skillNodes = {};
-  let _trackNodes = {};
-  const BRANCH_EMOJI = { 'Producción': '🏭', 'Estaciones': '⚙️', 'Meta': '💎' };
 
   function cache() {
     el.money = document.getElementById('money');
@@ -15,18 +12,12 @@ const UI = (() => {
     el.board = document.getElementById('board');
     el.tierFill = document.getElementById('tier-fill');
     el.tierText = document.getElementById('tier-text');
-    el.tracks = document.getElementById('tracks');
     el.btnAscend = document.getElementById('btn-ascend');
     el.ascendInfo = document.getElementById('ascend-info');
     el.btnSkills = document.getElementById('btn-skills');
     el.btnBackup = document.getElementById('btn-backup');
     el.btnReset = document.getElementById('btn-reset');
     el.btnSound = document.getElementById('btn-sound');
-    // swap modal
-    el.swapModal = document.getElementById('swap-modal');
-    el.swapClose = document.getElementById('swap-close');
-    el.swapInfo = document.getElementById('swap-info');
-    el.swapList = document.getElementById('swap-list');
     // skills modal
     el.skillsModal = document.getElementById('skills-modal');
     el.skillsClose = document.getElementById('skills-close');
@@ -52,8 +43,6 @@ const UI = (() => {
     el.tierFill.style.width = (tierProgress() * 100).toFixed(1) + '%';
     el.tierText.textContent = formatNumber(state.bankedThisTier) + ' / ' + formatNumber(goal);
 
-    renderTracks();
-
     const can = canAscend();
     el.btnAscend.disabled = !can;
     el.btnAscend.classList.toggle('ready', can);
@@ -65,92 +54,30 @@ const UI = (() => {
     }
   }
 
-  // ---- Mejoras por partes ----
-  function buildTracks() {
-    el.tracks.innerHTML = '';
-    _trackNodes = {};
-    for (const t of GAME.tracks) {
-      const b = document.createElement('button');
-      b.className = 'track';
-      b.innerHTML = `
-        <span class="track-ico" style="color:${t.color}">${Icons.markup(t.ico, { size: 20, stroke: t.color })}</span>
-        <span class="track-name">${t.name}</span>
-        <span class="track-lvl"></span>
-        <span class="track-cost"></span>`;
-      b.addEventListener('click', () => {
-        if (buyTrack(t.id)) { if (typeof Sound !== 'undefined') Sound.buy(); renderHud(); saveGame(); }
-        else { b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); }
-      });
-      el.tracks.appendChild(b);
-      _trackNodes[t.id] = b;
-    }
-  }
-  function renderTracks() {
-    for (const t of GAME.tracks) {
-      const b = _trackNodes[t.id];
-      if (!b) continue;
-      b.querySelector('.track-lvl').textContent = 'Nv.' + trackLevel(t.id);
-      b.querySelector('.track-cost').textContent = formatNumber(trackCost(t.id));
-      b.classList.toggle('affordable', canBuyTrack(t.id));
-    }
-  }
-
-  // ---- Tap en el canvas -> estación ----
+  // ---- Tap en el canvas -> mejora de la plataforma (etiqueta $precio) ----
   function onBoardTap(e) {
     const geo = Route.get();
     if (!geo) return;
     const r = el.board.getBoundingClientRect();
     const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
     const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
-    let best = -1, bestD = 32;
-    for (const st of geo.stations) {
-      const d = Math.hypot(st.pos.x - x, st.pos.y - y);
-      if (d < bestD) { bestD = d; best = st.index; }
+    // Busca la etiqueta de mejora tocada (rect calculado por el render).
+    let hit = -1;
+    for (const sh of geo.shelves) {
+      const t = sh._tagRect;
+      if (!t) continue;
+      const pad = 8; // zona de toque algo más amplia que el cartel
+      if (x >= t.x - pad && x <= t.x + t.w + pad && y >= t.y - pad && y <= t.y + t.h + pad) {
+        hit = sh.index; break;
+      }
     }
-    if (best >= 0) openSwap(best);
-  }
-
-  // ---- Modal: cambiar estación ----
-  function openSwap(index) {
-    _swapIndex = index;
-    const left = maxSwaps() - state.swapsUsed;
-    const cost = swapCost();
-    el.swapInfo.innerHTML = 'Cambios restantes este tier: <strong>' + left + '</strong>' +
-      ' · Coste: <strong>' + formatNumber(cost) + ' 💰</strong>';
-    el.swapList.innerHTML = '';
-    const current = state.route.slots[index];
-    for (const key of ['mult', 'forge', 'casino', 'split']) {
-      const def = GAME.stations[key];
-      const opt = document.createElement('button');
-      opt.className = 'opt' + (key === current ? ' current' : '');
-      opt.innerHTML = `
-        <span class="opt-badge" style="color:${def.color}">${Icons.markup(def.ico, { size: 22, stroke: def.color })}</span>
-        <span class="opt-info">
-          <span class="opt-name">${def.name}${key === current ? ' · actual' : ''}</span>
-          <span class="opt-desc">${stationDesc(key)}</span>
-        </span>`;
-      const affordable = left > 0 && state.money >= cost && key !== current;
-      opt.disabled = !affordable;
-      opt.addEventListener('click', () => {
-        if (doSwap(index, key)) {
-          if (typeof Sound !== 'undefined') Sound.buy();
-          closeSwap(); renderHud(); saveGame();
-          toast('🔧 Estación cambiada a ' + def.name);
-        }
-      });
-      el.swapList.appendChild(opt);
+    if (hit < 0) return;
+    if (buyShelfUpgrade(hit)) {
+      if (typeof Sound !== 'undefined') Sound.buy();
+      renderHud(); saveGame();
+    } else {
+      toast('Necesitas ' + formatNumber(shelfUpCost(hit)) + ' 💰');
     }
-    el.swapModal.hidden = false;
-  }
-  function closeSwap() { el.swapModal.hidden = true; }
-  function stationDesc(key) {
-    switch (key) {
-      case 'mult': return 'Multiplica el valor de la moneda (×' + multPower() + ').';
-      case 'forge': return 'Sube el tier de la moneda (' + Math.round(forgeChance() * 100) + '%).';
-      case 'casino': return 'Apuesta: ×' + GAME.power.casinoMult + ' (' + Math.round(casinoWinChance() * 100) + '%) o la pierde.';
-      case 'split': return 'Divide la moneda en 2 (cada una ×' + splitFactor().toFixed(2) + ').';
-    }
-    return '';
   }
 
   // ---- Modal: árbol de habilidades ----
@@ -272,8 +199,6 @@ const UI = (() => {
     el.btnSkills.addEventListener('click', openSkills);
     el.skillsClose.addEventListener('click', closeSkills);
     el.skillsModal.addEventListener('click', e => { if (e.target === el.skillsModal) closeSkills(); });
-    el.swapClose.addEventListener('click', closeSwap);
-    el.swapModal.addEventListener('click', e => { if (e.target === el.swapModal) closeSwap(); });
     el.btnBackup.addEventListener('click', openBackup);
     el.saveClose.addEventListener('click', closeBackup);
     el.saveCopy.addEventListener('click', copyBackup);
@@ -285,7 +210,6 @@ const UI = (() => {
     cache();
     Icons.inject();          // rellena los <i data-ico> estáticos
     Render.init(el.board);
-    buildTracks();
     buildSkills();
     bind();
     if (typeof Sound !== 'undefined') Sound.setEnabled(state.soundEnabled);
